@@ -17,19 +17,6 @@ export async function loginReq(data: LoginRequest): Promise<TokenResponse> {
         },
       };
     }
-    if (data.password === 'avaliador123') {
-      return {
-        access_token: 'mock-jwt-token',
-        user: {
-          id: 2,
-          nome: 'Maria Avaliadora',
-          email: data.email,
-          role: 'avaliador',
-          ativo: true,
-          criado_em: new Date().toISOString(),
-        },
-      };
-    }
     throw new Error('Credenciais inválidas');
   }
 
