@@ -1,0 +1,43 @@
+// Shared domain types
+export type UserRole = 'admin' | 'avaliador';
+
+export interface User {
+  id: number;
+  nome: string;
+  email: string;
+  role: UserRole;
+  ativo: boolean;
+  criado_em: string;
+}
+
+export interface Patient {
+  id: number;
+  nome: string;
+  idade: number | null;
+  avaliador_id: number | null;
+  criado_em: string;
+}
+
+export interface Evaluation {
+  id: number;
+  patientId: number;
+  patientNome: string;
+  avaliadorId: number;
+  avaliadorNome: string;
+  respostas: Record<number, number>;
+  scoreTotal: number;
+  classificacao: string;
+  dataAvaliacao: string;
+}
+
+export interface DashboardStats {
+  total: number;
+  averageScore: number;
+  lastMonthEvaluations: number;
+  classificationDistribution: {
+    semIndicativo: number;
+    teaLeveModerado: number;
+    teaGrave: number;
+  };
+  recentEvaluations: Evaluation[];
+}
