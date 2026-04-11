@@ -102,22 +102,24 @@ class EvaluationService:
                 ISNULL(AVG(CAST(score_total as float)), 0) as avg_score,
                 SUM(CASE WHEN CAST(score_total as float) <= 29.5 THEN 1 ELSE 0 END) as sem_indicativo,
                 SUM(CASE WHEN CAST(score_total as float) > 29.5 AND CAST(score_total as float) < 37 THEN 1 ELSE 0 END) as tea_leve,
-                SUM(CASE WHEN CAST(score_total as float) >= 37 THEN 1 ELSE 0 END) as tea_grave
+                SUM(CASE WHEN CAST(score_total as float) >= 37 THEN 1 ELSE 0 END) as tea_grave,
+                SUM(CASE WHEN data_avaliacao >= DATEADD(month, -1, GETDATE()) THEN 1 ELSE 0 END) as last_month
             FROM evaluations
         """)
         row = self.db.execute(query).mappings().first()
-        if not row:
-            return {"total": 0, "avg_score": 0, "sem_indicativo": 0, "tea_leve": 0, "tea_grave": 0}
 
         recent = self.list_all()[:5]
 
         return {
-            "total": row["total"],
-            "avg_score": round(float(row["avg_score"]), 1),
-            "sem_indicativo": row["sem_indicativo"],
-            "tea_leve": row["tea_leve"],
-            "tea_grave": row["tea_grave"],
-            "recent": recent,
+            "total": int(row["total"] or 0) if row else 0,
+            "averageScore": round(float(row["avg_score"] or 0), 1) if row else 0,
+            "lastMonth": int(row["last_month"] or 0) if row else 0,
+            "classificationDistribution": {
+                "semIndicativo": int(row["sem_indicativo"] or 0) if row else 0,
+                "teaLeveModerado": int(row["tea_leve"] or 0) if row else 0,
+                "teaGrave": int(row["tea_grave"] or 0) if row else 0,
+            },
+            "recentEvaluations": recent,
         }
 
     def delete(self, eval_id: int) -> bool:

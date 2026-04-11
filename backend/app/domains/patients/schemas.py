@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 
 
 class PatientOut(BaseModel):
@@ -7,7 +8,7 @@ class PatientOut(BaseModel):
     nome: str
     idade: Optional[int] = None
     avaliador_id: Optional[int] = None
-    criado_em: Optional[str] = None
+    criado_em: Optional[datetime] = None
 
     class Config:
         from_attributes = True

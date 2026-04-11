@@ -27,7 +27,7 @@ api.interceptors.response.use(
   }
 );
 
-let mockEnabled = true;
+let mockEnabled = import.meta.env.VITE_MOCK_MODE === 'true';
 
 export function setMockMode(on: boolean) {
   mockEnabled = on;

@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 
 
 class LoginRequest(BaseModel):
@@ -18,7 +19,7 @@ class UserOut(BaseModel):
     email: str
     role: str
     ativo: bool
-    criado_em: Optional[str] = None
+    criado_em: Optional[datetime] = None
 
     class Config:
         from_attributes = True
