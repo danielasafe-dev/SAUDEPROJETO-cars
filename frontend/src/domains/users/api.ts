@@ -12,6 +12,7 @@ export async function getUsers() {
 export async function createUser(data: {
   nome: string;
   email: string;
+  password: string;
   role: 'admin' | 'avaliador';
 }) {
   if (isMockMode()) {

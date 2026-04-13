@@ -8,8 +8,10 @@ export default function UsersPage() {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [role, setRole] = useState<'admin' | 'avaliador'>('avaliador');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     getUsers().then(setUsers);
@@ -17,16 +19,18 @@ export default function UsersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
     try {
-      await createUser({ nome: name, email, role });
+      await createUser({ nome: name, email, password, role });
       const updated = await getUsers();
       setUsers(updated);
       setShowForm(false);
       setName('');
       setEmail('');
-    } catch {
-      // error handled silently
+      setPassword('');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao criar usuario');
     } finally {
       setLoading(false);
     }
@@ -69,6 +73,18 @@ export default function UsersPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+            <div className="w-56">
+              <label className="block text-sm font-medium mb-1">Senha</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Senha de acesso"
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium mb-1">Perfil</label>
               <select value={role} onChange={(e) => setRole(e.target.value as 'admin' | 'avaliador')}
@@ -78,6 +94,14 @@ export default function UsersPage() {
                 <option value="admin">Admin</option>
               </select>
             </div>
+            <div className="w-full text-xs text-gray-500">
+              Defina aqui a senha que o funcionario vai usar para fazer login.
+            </div>
+            {error && (
+              <div className="w-full rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+                {error}
+              </div>
+            )}
             <button type="submit" disabled={loading}
               className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm font-medium"
             >

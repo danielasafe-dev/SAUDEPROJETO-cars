@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     db_server: str = "localhost"
     db_port: int = 1433
     db_name: str = "cars_db"
-    db_user: str = "sa"
-    db_password: str = "StrongPass123!"
+    db_user: str = "sa1"
+    db_password: str = "sa@1234"
 
     # JWT
     jwt_secret: str = "super-secret-key-change-in-production"
