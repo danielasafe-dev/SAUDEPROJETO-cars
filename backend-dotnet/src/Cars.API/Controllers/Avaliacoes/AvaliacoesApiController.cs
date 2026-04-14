@@ -1,4 +1,4 @@
-﻿using Cars.Api.Extensions;
+using Cars.Api.Extensions;
 using Cars.Application.DTOs.Evaluations;
 using Cars.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -8,7 +8,7 @@ namespace Cars.Api.Controllers;
 
 [ApiController]
 [Route("api/evaluations")]
-[Authorize]
+[Authorize(Policy = "EvaluationAccess")]
 public sealed class EvaluationsController : ControllerBase
 {
     private readonly IEvaluationsAppService _evaluationsAppService;
@@ -21,14 +21,14 @@ public sealed class EvaluationsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken cancellationToken)
     {
-        var result = await _evaluationsAppService.ListAsync(cancellationToken);
+        var result = await _evaluationsAppService.ListAsync(User.GetUserId(), cancellationToken);
         return Ok(result);
     }
 
     [HttpGet("stats")]
     public async Task<IActionResult> Stats(CancellationToken cancellationToken)
     {
-        var result = await _evaluationsAppService.GetStatsAsync(cancellationToken);
+        var result = await _evaluationsAppService.GetStatsAsync(User.GetUserId(), cancellationToken);
         return Ok(result);
     }
 
@@ -42,7 +42,7 @@ public sealed class EvaluationsController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
-        var result = await _evaluationsAppService.GetByIdAsync(id, cancellationToken);
+        var result = await _evaluationsAppService.GetByIdAsync(id, User.GetUserId(), cancellationToken);
         if (result is null)
         {
             return NotFound(new { detail = "Avaliacao nao encontrada" });
@@ -52,10 +52,24 @@ public sealed class EvaluationsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize(Policy = "EvaluationManagement")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        await _evaluationsAppService.DeleteAsync(id, cancellationToken);
+        await _evaluationsAppService.DeleteAsync(id, User.GetUserId(), cancellationToken);
         return Ok(new { message = "Avaliacao deletada" });
+    }
+
+    [HttpGet("{id:int}/export/excel")]
+    public async Task<IActionResult> ExportExcel(int id, CancellationToken cancellationToken)
+    {
+        var file = await _evaluationsAppService.ExportExcelAsync(id, User.GetUserId(), cancellationToken);
+        return File(file.Content, file.ContentType, file.FileName);
+    }
+
+    [HttpGet("{id:int}/export/pdf")]
+    public async Task<IActionResult> ExportPdf(int id, CancellationToken cancellationToken)
+    {
+        var file = await _evaluationsAppService.ExportPdfAsync(id, User.GetUserId(), cancellationToken);
+        return File(file.Content, file.ContentType, file.FileName);
     }
 }

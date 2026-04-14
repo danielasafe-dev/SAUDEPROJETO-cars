@@ -9,4 +9,6 @@ public sealed class CreatePatientRequestDto
     public string Nome { get; init; } = string.Empty;
 
     public int? Idade { get; init; }
+
+    public int? GroupId { get; init; }
 }

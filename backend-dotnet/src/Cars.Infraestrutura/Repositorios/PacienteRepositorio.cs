@@ -15,10 +15,31 @@ public sealed class PatientRepository : IPatientRepository
     }
 
     public Task<List<Patient>> ListAsync(CancellationToken cancellationToken = default) =>
-        _context.Patients.AsNoTracking().OrderBy(x => x.Nome).ToListAsync(cancellationToken);
+        _context.Patients
+            .AsNoTracking()
+            .Include(x => x.Group)
+            .OrderBy(x => x.Nome)
+            .ToListAsync(cancellationToken);
+
+    public Task<List<Patient>> ListByGroupIdsAsync(IReadOnlyCollection<int> groupIds, CancellationToken cancellationToken = default)
+    {
+        if (groupIds.Count == 0)
+        {
+            return Task.FromResult(new List<Patient>());
+        }
+
+        return _context.Patients
+            .AsNoTracking()
+            .Include(x => x.Group)
+            .Where(x => groupIds.Contains(x.GroupId))
+            .OrderBy(x => x.Nome)
+            .ToListAsync(cancellationToken);
+    }
 
     public Task<Patient?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
-        _context.Patients.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        _context.Patients
+            .Include(x => x.Group)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public Task AddAsync(Patient patient, CancellationToken cancellationToken = default) =>
         _context.Patients.AddAsync(patient, cancellationToken).AsTask();

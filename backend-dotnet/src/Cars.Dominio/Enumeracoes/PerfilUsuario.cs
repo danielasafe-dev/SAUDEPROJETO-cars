@@ -3,5 +3,7 @@
 public enum UserRole
 {
     Admin = 1,
-    Avaliador = 2
+    Analyst = 2,
+    HealthAgent = 3,
+    Manager = 4
 }

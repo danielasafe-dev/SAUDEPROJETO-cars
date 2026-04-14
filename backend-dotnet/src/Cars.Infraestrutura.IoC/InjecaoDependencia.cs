@@ -24,7 +24,9 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<AppDbContext>());
 
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IGroupRepository, GroupRepository>();
         services.AddScoped<IPatientRepository, PatientRepository>();
+        services.AddScoped<IFormRepository, FormRepository>();
         services.AddScoped<IEvaluationRepository, EvaluationRepository>();
 
         services.AddScoped<PasswordHasherAdapter>();
@@ -32,6 +34,10 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, JwtTokenService>();
 
         services.AddScoped<IAuthAppService, AuthAppService>();
+        services.AddScoped<IGroupsAppService, GroupsAppService>();
+        services.AddScoped<IFormsAppService, FormsAppService>();
+        services.AddScoped<IDashboardAppService, DashboardAppService>();
+        services.AddScoped<IProfileAppService, ProfileAppService>();
         services.AddScoped<IUsersAppService, UsersAppService>();
         services.AddScoped<IPatientsAppService, PatientsAppService>();
         services.AddScoped<IEvaluationsAppService, EvaluationsAppService>();

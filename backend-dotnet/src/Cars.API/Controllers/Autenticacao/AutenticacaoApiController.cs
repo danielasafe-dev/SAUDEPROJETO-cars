@@ -1,4 +1,4 @@
-﻿using Cars.Api.Extensions;
+using Cars.Api.Extensions;
 using Cars.Application.DTOs.Auth;
 using Cars.Application.DTOs.Users;
 using Cars.Application.Interfaces;
@@ -35,10 +35,10 @@ public sealed class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize(Policy = "UserManagement")]
     public async Task<IActionResult> Register([FromBody] CreateUserRequestDto request, CancellationToken cancellationToken)
     {
-        var result = await _authAppService.RegisterAsync(request, cancellationToken);
+        var result = await _authAppService.RegisterAsync(request, User.GetUserId(), cancellationToken);
         return Ok(result);
     }
 }

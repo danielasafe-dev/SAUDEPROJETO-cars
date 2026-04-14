@@ -11,7 +11,11 @@ public sealed class AppDbContext : DbContext, IUnitOfWork
     }
 
     public DbSet<User> Users => Set<User>();
+    public DbSet<Group> Groups => Set<Group>();
+    public DbSet<UserGroupMembership> UserGroupMemberships => Set<UserGroupMembership>();
     public DbSet<Patient> Patients => Set<Patient>();
+    public DbSet<FormTemplate> FormTemplates => Set<FormTemplate>();
+    public DbSet<FormQuestion> FormQuestions => Set<FormQuestion>();
     public DbSet<Evaluation> Evaluations => Set<Evaluation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

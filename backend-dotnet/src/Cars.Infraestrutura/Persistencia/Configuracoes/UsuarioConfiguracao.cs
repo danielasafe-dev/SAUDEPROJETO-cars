@@ -33,7 +33,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(x => x.Role)
             .HasColumnName("role")
-            .HasMaxLength(20)
+            .HasMaxLength(30)
             .HasConversion(
                 role => role.ToApiValue(),
                 value => UserRoleExtensions.FromApiValue(value))
@@ -49,5 +49,15 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasColumnType("datetime2")
             .HasDefaultValueSql("GETUTCDATE()")
             .IsRequired();
+
+        builder.HasMany(x => x.ManagedGroups)
+            .WithOne(x => x.Gestor)
+            .HasForeignKey(x => x.GestorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany(x => x.GroupMemberships)
+            .WithOne(x => x.User)
+            .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

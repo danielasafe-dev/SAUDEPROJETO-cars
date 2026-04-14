@@ -12,7 +12,11 @@ backend-dotnet/
 |   |   |-- Controllers/
 |   |   |   |-- Autenticacao/
 |   |   |   |-- Avaliacoes/
+|   |   |   |-- Dashboard/
+|   |   |   |-- Formularios/
+|   |   |   |-- Grupos/
 |   |   |   |-- Pacientes/
+|   |   |   |-- Perfil/
 |   |   |   |-- Saude/
 |   |   |   `-- Usuarios/
 |   |   |-- Extensoes/
@@ -22,18 +26,31 @@ backend-dotnet/
 |   |   `-- Properties/
 |   |-- Cars.Aplicacao/
 |   |   |-- DTOs/
+|   |   |   |-- Dashboard/
+|   |   |   |-- Formularios/
+|   |   |   |-- Grupos/
+|   |   |   |-- Perfil/
 |   |   |-- Interfaces/
 |   |   |   |-- Autenticacao/
 |   |   |   |-- Avaliacoes/
+|   |   |   |-- Dashboard/
+|   |   |   |-- Formularios/
+|   |   |   |-- Grupos/
 |   |   |   |-- IUnitOfWork.cs
 |   |   |   |-- Pacientes/
+|   |   |   |-- Perfil/
 |   |   |   |-- Seguranca/
 |   |   |   `-- Usuarios/
 |   |   |-- Mapeamentos/
 |   |   `-- Servicos/
+|   |       |-- Acesso/
 |   |       |-- Autenticacao/
 |   |       |-- Avaliacoes/
+|   |       |-- Dashboard/
+|   |       |-- Formularios/
+|   |       |-- Grupos/
 |   |       |-- Pacientes/
+|   |       |-- Perfil/
 |   |       `-- Usuarios/
 |   |-- Cars.Dominio/
 |   |   |-- Comum/
@@ -72,9 +89,9 @@ backend-dotnet/
 
 ### `Cars.Dominio`
 
-- entidades centrais (`Usuario`, `Paciente`, `Avaliacao`)
+- entidades centrais (`Usuario`, `Grupo`, `Paciente`, `Formulario`, `Avaliacao`)
 - value object (`Email`)
-- regras puras da escala CARS
+- regras puras da escala CARS e regras de perfil/escopo
 - contratos de repositorio
 
 ### `Cars.Infraestrutura`
@@ -93,13 +110,22 @@ backend-dotnet/
 
 ## Endpoints mapeados da API atual
 
-| Legado | ASP.NET Core |
+| Endpoint | ASP.NET Core |
 |---|---|
 | `POST /api/auth/login` | `AutenticacaoApiController.Login` |
 | `GET /api/auth/me` | `AutenticacaoApiController.Me` |
 | `POST /api/auth/register` | `AutenticacaoApiController.Register` |
 | `GET /api/users` | `UsuariosApiController.List` |
 | `PUT /api/users/{id}/deactivate` | `UsuariosApiController.Deactivate` |
+| `PUT /api/users/{id}/groups` | `UsuariosApiController.UpdateGroups` |
+| `GET /api/dashboard` | `DashboardApiController.Get` |
+| `GET /api/groups` | `GruposApiController.List` |
+| `POST /api/groups` | `GruposApiController.Create` |
+| `PUT /api/groups/{id}` | `GruposApiController.Update` |
+| `GET /api/forms` | `FormulariosApiController.List` |
+| `GET /api/forms/{id}` | `FormulariosApiController.GetById` |
+| `POST /api/forms` | `FormulariosApiController.Create` |
+| `PUT /api/forms/{id}` | `FormulariosApiController.Update` |
 | `GET /api/patients` | `PacientesApiController.List` |
 | `POST /api/patients` | `PacientesApiController.Create` |
 | `GET /api/evaluations` | `AvaliacoesApiController.List` |
@@ -107,7 +133,26 @@ backend-dotnet/
 | `GET /api/evaluations/{id}` | `AvaliacoesApiController.GetById` |
 | `POST /api/evaluations` | `AvaliacoesApiController.Create` |
 | `DELETE /api/evaluations/{id}` | `AvaliacoesApiController.Delete` |
+| `GET /api/evaluations/{id}/export/excel` | `AvaliacoesApiController.ExportExcel` |
+| `GET /api/evaluations/{id}/export/pdf` | `AvaliacoesApiController.ExportPdf` |
+| `GET /api/profile` | `PerfilApiController.Get` |
+| `PUT /api/profile` | `PerfilApiController.Update` |
 | `GET /health` | `SaudeApiController.Get` |
+
+## Perfis de acesso
+
+- `admin`: acesso total, inclusive avaliacao, grupos, usuarios e formularios globais
+- `analista`: acesso somente ao dashboard
+- `agente_saude`: acesso operacional e permissao para avaliar dentro dos grupos vinculados
+- `gestor`: acesso operacional e administrativo dentro dos grupos que gerencia
+
+## Escopo de grupos
+
+- usuarios podem pertencer a varios grupos por meio de `user_group_memberships`
+- cada grupo possui um `gestor_id`
+- pacientes pertencem a um grupo
+- avaliacoes herdam o grupo do paciente
+- formularios podem ser globais ou vinculados a um grupo
 
 ## Como rodar localmente
 
@@ -138,13 +183,17 @@ Por padrao, a API esta preparada para usar **SQL Server local** em:
 - o JWT continua sendo enviado como `Bearer`
 - os endpoints principais permanecem iguais
 - `CriarAvaliacaoRequisicaoDto` aceita `patientId` e `patient_id`
+- avaliacoes agora tambem aceitam `formId`
 - usuarios e pacientes continuam retornando `criado_em` e `avaliador_id`
-- avaliacoes continuam retornando `patientId`, `scoreTotal`, `dataAvaliacao`
+- pacientes passam a retornar `group_id` e `group_nome`
+- usuarios passam a retornar os grupos vinculados e `podeAvaliar`
+- avaliacoes continuam retornando `patientId`, `scoreTotal`, `dataAvaliacao` e agora incluem grupo/formulario
 
 ## Observacoes de migracao
 
 - a base legada usava SQL bruto no modulo de avaliacoes; na nova estrutura isso foi centralizado em EF Core + repositorios
 - o seed do admin agora fica controlado por configuracao (`Inicializacao`)
 - a classificacao CARS foi movida para o dominio (`ServicoClassificacaoCars`)
+- grupos, formularios dinamicos e exportacao de avaliacao foram incorporados sem dependencias extras
 - a solucao foi organizada para permitir migracao gradual por modulo
 

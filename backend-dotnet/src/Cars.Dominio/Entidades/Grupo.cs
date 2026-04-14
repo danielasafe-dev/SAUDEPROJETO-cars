@@ -1,0 +1,60 @@
+using Cars.Domain.Common;
+
+namespace Cars.Domain.Entities;
+
+public sealed class Group : Entity, IAggregateRoot
+{
+    private readonly List<UserGroupMembership> _members = [];
+    private readonly List<Patient> _patients = [];
+    private readonly List<FormTemplate> _forms = [];
+
+    private Group()
+    {
+    }
+
+    public Group(string nome, int gestorId)
+    {
+        if (string.IsNullOrWhiteSpace(nome))
+        {
+            throw new InvalidOperationException("Nome do grupo e obrigatorio.");
+        }
+
+        if (gestorId <= 0)
+        {
+            throw new InvalidOperationException("Gestor invalido.");
+        }
+
+        Nome = nome.Trim();
+        GestorId = gestorId;
+        Ativo = true;
+        CriadoEm = DateTime.UtcNow;
+    }
+
+    public string Nome { get; private set; } = string.Empty;
+    public int GestorId { get; private set; }
+    public bool Ativo { get; private set; }
+    public DateTime CriadoEm { get; private set; }
+
+    public User Gestor { get; private set; } = null!;
+    public IReadOnlyCollection<UserGroupMembership> Members => _members;
+    public IReadOnlyCollection<Patient> Patients => _patients;
+    public IReadOnlyCollection<FormTemplate> Forms => _forms;
+
+    public void Update(string nome, int gestorId)
+    {
+        if (string.IsNullOrWhiteSpace(nome))
+        {
+            throw new InvalidOperationException("Nome do grupo e obrigatorio.");
+        }
+
+        if (gestorId <= 0)
+        {
+            throw new InvalidOperationException("Gestor invalido.");
+        }
+
+        Nome = nome.Trim();
+        GestorId = gestorId;
+    }
+
+    public void Deactivate() => Ativo = false;
+}

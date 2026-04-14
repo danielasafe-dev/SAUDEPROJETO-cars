@@ -1,6 +1,8 @@
 using Cars.Application.DTOs.Users;
 using Cars.Application.Interfaces;
 using Cars.Application.Mappings;
+using Cars.Application.Services.Access;
+using Cars.Domain.Enums;
 using Cars.Domain.Repositories;
 
 namespace Cars.Application.Services;
@@ -8,27 +10,106 @@ namespace Cars.Application.Services;
 public sealed class UsersAppService : IUsersAppService
 {
     private readonly IUserRepository _userRepository;
+    private readonly IGroupRepository _groupRepository;
     private readonly IUnitOfWork _unitOfWork;
 
-    public UsersAppService(IUserRepository userRepository, IUnitOfWork unitOfWork)
+    public UsersAppService(IUserRepository userRepository, IGroupRepository groupRepository, IUnitOfWork unitOfWork)
     {
         _userRepository = userRepository;
+        _groupRepository = groupRepository;
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<IReadOnlyCollection<UserResponseDto>> ListAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<UserResponseDto>> ListAsync(int actorUserId, CancellationToken cancellationToken = default)
     {
-        var users = await _userRepository.ListAsync(cancellationToken);
+        var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
+            ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
+
+        if (!actor.Role.CanManageUsers())
+        {
+            throw new UnauthorizedAccessException("Usuario sem permissao para listar usuarios.");
+        }
+
+        var accessScope = AccessScopeResolver.Resolve(actor);
+        var users = actor.Role == UserRole.Admin
+            ? await _userRepository.ListAsync(cancellationToken)
+            : await _userRepository.ListByGroupIdsAsync(accessScope.ManagedGroupIds, cancellationToken);
+
         return users.Select(x => x.ToDto()).ToList();
     }
 
-    public async Task DeactivateAsync(int userId, CancellationToken cancellationToken = default)
+    public async Task DeactivateAsync(int userId, int actorUserId, CancellationToken cancellationToken = default)
     {
-        var user = await _userRepository.GetByIdAsync(userId, cancellationToken)
+        var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
+            ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
+
+        if (!actor.Role.CanManageUsers())
+        {
+            throw new UnauthorizedAccessException("Usuario sem permissao para desativar usuarios.");
+        }
+
+        var accessScope = AccessScopeResolver.Resolve(actor);
+        var user = await _userRepository.GetDetailedByIdAsync(userId, cancellationToken)
             ?? throw new KeyNotFoundException("Usuario nao encontrado.");
+
+        if (actor.Role == UserRole.Manager)
+        {
+            var targetGroupIds = user.GroupMemberships.Select(x => x.GroupId).Distinct().ToArray();
+            if (targetGroupIds.Any() && targetGroupIds.Any(x => !accessScope.ManagedGroupIds.Contains(x)))
+            {
+                throw new UnauthorizedAccessException("Gestor so pode desativar usuarios dos grupos que gerencia.");
+            }
+        }
 
         user.Deactivate();
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
-}
 
+    public async Task UpdateGroupsAsync(
+        int userId,
+        UpdateUserGroupsRequestDto request,
+        int actorUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
+            ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
+
+        if (!actor.Role.CanManageUsers())
+        {
+            throw new UnauthorizedAccessException("Usuario sem permissao para alterar grupos.");
+        }
+
+        var user = await _userRepository.GetDetailedByIdAsync(userId, cancellationToken)
+            ?? throw new KeyNotFoundException("Usuario nao encontrado.");
+
+        var requestedGroupIds = request.GroupIds
+            .Where(x => x > 0)
+            .Distinct()
+            .OrderBy(x => x)
+            .ToArray();
+
+        var groups = await _groupRepository.ListByIdsAsync(requestedGroupIds, cancellationToken);
+        if (groups.Count != requestedGroupIds.Length)
+        {
+            throw new KeyNotFoundException("Um ou mais grupos informados nao existem.");
+        }
+
+        if (actor.Role == UserRole.Manager)
+        {
+            var accessScope = AccessScopeResolver.Resolve(actor);
+            if (requestedGroupIds.Any(x => !accessScope.ManagedGroupIds.Contains(x)))
+            {
+                throw new UnauthorizedAccessException("Gestor so pode vincular usuarios aos grupos que gerencia.");
+            }
+
+            var currentGroupIds = user.GroupMemberships.Select(x => x.GroupId).Distinct().ToArray();
+            if (currentGroupIds.Any(x => !accessScope.ManagedGroupIds.Contains(x)))
+            {
+                throw new UnauthorizedAccessException("Gestor so pode alterar usuarios dentro dos grupos que gerencia.");
+            }
+        }
+
+        await _userRepository.ReplaceGroupMembershipsAsync(userId, requestedGroupIds, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+}

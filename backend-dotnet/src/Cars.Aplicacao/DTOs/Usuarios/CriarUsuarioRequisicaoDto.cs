@@ -17,5 +17,7 @@ public sealed class CreateUserRequestDto
     public string Password { get; init; } = string.Empty;
 
     [Required]
-    public string Role { get; init; } = "avaliador";
+    public string Role { get; init; } = "agente_saude";
+
+    public IReadOnlyCollection<int> GroupIds { get; init; } = [];
 }

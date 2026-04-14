@@ -10,13 +10,13 @@ public sealed class PasswordHasherAdapter : IPasswordHasher
 
     public string Hash(string password)
     {
-        var user = new User("placeholder", new("placeholder@local"), "seed", Domain.Enums.UserRole.Avaliador);
+        var user = new User("placeholder", new("placeholder@local"), "seed", Domain.Enums.UserRole.HealthAgent);
         return _passwordHasher.HashPassword(user, password);
     }
 
     public bool Verify(string password, string passwordHash)
     {
-        var user = new User("placeholder", new("placeholder@local"), "seed", Domain.Enums.UserRole.Avaliador);
+        var user = new User("placeholder", new("placeholder@local"), "seed", Domain.Enums.UserRole.HealthAgent);
         var result = _passwordHasher.VerifyHashedPassword(user, passwordHash, password);
         return result is PasswordVerificationResult.Success or PasswordVerificationResult.SuccessRehashNeeded;
     }

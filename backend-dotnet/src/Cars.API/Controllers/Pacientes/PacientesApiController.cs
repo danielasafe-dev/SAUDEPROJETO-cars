@@ -1,4 +1,4 @@
-﻿using Cars.Api.Extensions;
+using Cars.Api.Extensions;
 using Cars.Application.DTOs.Patients;
 using Cars.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -8,7 +8,7 @@ namespace Cars.Api.Controllers;
 
 [ApiController]
 [Route("api/patients")]
-[Authorize]
+[Authorize(Policy = "PatientAccess")]
 public sealed class PatientsController : ControllerBase
 {
     private readonly IPatientsAppService _patientsAppService;
@@ -21,7 +21,7 @@ public sealed class PatientsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken cancellationToken)
     {
-        var result = await _patientsAppService.ListAsync(cancellationToken);
+        var result = await _patientsAppService.ListAsync(User.GetUserId(), cancellationToken);
         return Ok(result);
     }
 

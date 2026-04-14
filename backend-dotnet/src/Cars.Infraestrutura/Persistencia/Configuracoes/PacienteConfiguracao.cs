@@ -24,6 +24,10 @@ public sealed class PatientConfiguration : IEntityTypeConfiguration<Patient>
         builder.Property(x => x.AvaliadorId)
             .HasColumnName("avaliador_id");
 
+        builder.Property(x => x.GroupId)
+            .HasColumnName("group_id")
+            .IsRequired();
+
         builder.Property(x => x.CriadoEm)
             .HasColumnName("criado_em")
             .HasColumnType("datetime2")
@@ -34,5 +38,12 @@ public sealed class PatientConfiguration : IEntityTypeConfiguration<Patient>
             .WithMany(x => x.PacientesCriados)
             .HasForeignKey(x => x.AvaliadorId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(x => x.Group)
+            .WithMany(x => x.Patients)
+            .HasForeignKey(x => x.GroupId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(x => x.GroupId);
     }
 }

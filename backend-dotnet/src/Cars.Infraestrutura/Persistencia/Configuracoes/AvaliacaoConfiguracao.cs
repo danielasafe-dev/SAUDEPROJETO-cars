@@ -23,6 +23,13 @@ public sealed class EvaluationConfiguration : IEntityTypeConfiguration<Evaluatio
             .HasColumnName("avaliador_id")
             .IsRequired();
 
+        builder.Property(x => x.GroupId)
+            .HasColumnName("group_id")
+            .IsRequired();
+
+        builder.Property(x => x.FormTemplateId)
+            .HasColumnName("form_template_id");
+
         builder.Property(x => x.Respostas)
             .HasColumnName("respostas")
             .HasColumnType("nvarchar(max)")
@@ -37,7 +44,12 @@ public sealed class EvaluationConfiguration : IEntityTypeConfiguration<Evaluatio
 
         builder.Property(x => x.ScoreTotal)
             .HasColumnName("score_total")
-            .HasPrecision(5, 1)
+            .HasPrecision(10, 2)
+            .IsRequired();
+
+        builder.Property(x => x.PesoTotal)
+            .HasColumnName("peso_total")
+            .HasPrecision(10, 2)
             .IsRequired();
 
         builder.Property(x => x.Classificacao)
@@ -60,5 +72,20 @@ public sealed class EvaluationConfiguration : IEntityTypeConfiguration<Evaluatio
             .WithMany(x => x.AvaliacoesRealizadas)
             .HasForeignKey(x => x.AvaliadorId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(x => x.Group)
+            .WithMany()
+            .HasForeignKey(x => x.GroupId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(x => x.FormTemplate)
+            .WithMany()
+            .HasForeignKey(x => x.FormTemplateId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(x => x.PatientId);
+        builder.HasIndex(x => x.AvaliadorId);
+        builder.HasIndex(x => x.GroupId);
+        builder.HasIndex(x => x.FormTemplateId);
     }
 }

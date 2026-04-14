@@ -4,6 +4,7 @@ namespace Cars.Application.Interfaces;
 
 public interface IUsersAppService
 {
-    Task<IReadOnlyCollection<UserResponseDto>> ListAsync(CancellationToken cancellationToken = default);
-    Task DeactivateAsync(int userId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<UserResponseDto>> ListAsync(int actorUserId, CancellationToken cancellationToken = default);
+    Task DeactivateAsync(int userId, int actorUserId, CancellationToken cancellationToken = default);
+    Task UpdateGroupsAsync(int userId, UpdateUserGroupsRequestDto request, int actorUserId, CancellationToken cancellationToken = default);
 }

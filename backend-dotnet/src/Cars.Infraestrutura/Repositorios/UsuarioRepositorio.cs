@@ -15,10 +15,42 @@ public sealed class UserRepository : IUserRepository
     }
 
     public Task<List<User>> ListAsync(CancellationToken cancellationToken = default) =>
-        _context.Users.AsNoTracking().OrderBy(x => x.Nome).ToListAsync(cancellationToken);
+        _context.Users
+            .AsNoTracking()
+            .Include(x => x.GroupMemberships)
+            .ThenInclude(x => x.Group)
+            .Include(x => x.ManagedGroups)
+            .OrderBy(x => x.Nome)
+            .ToListAsync(cancellationToken);
+
+    public Task<List<User>> ListByGroupIdsAsync(IReadOnlyCollection<int> groupIds, CancellationToken cancellationToken = default)
+    {
+        if (groupIds.Count == 0)
+        {
+            return Task.FromResult(new List<User>());
+        }
+
+        return _context.Users
+            .AsNoTracking()
+            .Include(x => x.GroupMemberships)
+            .ThenInclude(x => x.Group)
+            .Include(x => x.ManagedGroups)
+            .Where(x =>
+                x.GroupMemberships.Any(m => groupIds.Contains(m.GroupId)) ||
+                x.ManagedGroups.Any(g => groupIds.Contains(g.Id)))
+            .OrderBy(x => x.Nome)
+            .ToListAsync(cancellationToken);
+    }
 
     public Task<User?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
         _context.Users.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    public Task<User?> GetDetailedByIdAsync(int id, CancellationToken cancellationToken = default) =>
+        _context.Users
+            .Include(x => x.GroupMemberships)
+            .ThenInclude(x => x.Group)
+            .Include(x => x.ManagedGroups)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
@@ -28,4 +60,21 @@ public sealed class UserRepository : IUserRepository
 
     public Task AddAsync(User user, CancellationToken cancellationToken = default) =>
         _context.Users.AddAsync(user, cancellationToken).AsTask();
+
+    public async Task ReplaceGroupMembershipsAsync(
+        int userId,
+        IReadOnlyCollection<int> groupIds,
+        CancellationToken cancellationToken = default)
+    {
+        var memberships = await _context.UserGroupMemberships
+            .Where(x => x.UserId == userId)
+            .ToListAsync(cancellationToken);
+
+        _context.UserGroupMemberships.RemoveRange(memberships);
+
+        foreach (var groupId in groupIds.Where(x => x > 0).Distinct())
+        {
+            await _context.UserGroupMemberships.AddAsync(new UserGroupMembership(userId, groupId), cancellationToken);
+        }
+    }
 }

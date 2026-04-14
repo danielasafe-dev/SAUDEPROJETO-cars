@@ -11,6 +11,9 @@ public sealed class CreateEvaluationRequestDto
     [JsonPropertyName("patient_id")]
     public int? PatientIdSnakeCase { get; init; }
 
+    [JsonPropertyName("formId")]
+    public int? FormId { get; init; }
+
     [Required]
     public Dictionary<int, int> Respostas { get; init; } = [];
 

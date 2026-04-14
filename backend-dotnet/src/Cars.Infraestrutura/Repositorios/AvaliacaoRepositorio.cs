@@ -20,7 +20,31 @@ public sealed class EvaluationRepository : IEvaluationRepository
         var evaluations = await _context.Evaluations
             .AsNoTracking()
             .Include(x => x.Patient)
+            .ThenInclude(x => x.Group)
             .Include(x => x.Avaliador)
+            .Include(x => x.FormTemplate)
+            .OrderByDescending(x => x.DataAvaliacao)
+            .ToListAsync(cancellationToken);
+
+        return evaluations.Select(Map).ToList();
+    }
+
+    public async Task<List<EvaluationDetails>> ListDetailedByGroupIdsAsync(
+        IReadOnlyCollection<int> groupIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (groupIds.Count == 0)
+        {
+            return [];
+        }
+
+        var evaluations = await _context.Evaluations
+            .AsNoTracking()
+            .Include(x => x.Patient)
+            .ThenInclude(x => x.Group)
+            .Include(x => x.Avaliador)
+            .Include(x => x.FormTemplate)
+            .Where(x => groupIds.Contains(x.GroupId))
             .OrderByDescending(x => x.DataAvaliacao)
             .ToListAsync(cancellationToken);
 
@@ -32,7 +56,9 @@ public sealed class EvaluationRepository : IEvaluationRepository
         var evaluation = await _context.Evaluations
             .AsNoTracking()
             .Include(x => x.Patient)
+            .ThenInclude(x => x.Group)
             .Include(x => x.Avaliador)
+            .Include(x => x.FormTemplate)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
         return evaluation is null ? null : Map(evaluation);
@@ -40,6 +66,15 @@ public sealed class EvaluationRepository : IEvaluationRepository
 
     public Task<Evaluation?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
         _context.Evaluations.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    public Task<Evaluation?> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default) =>
+        _context.Evaluations
+            .Include(x => x.Patient)
+            .ThenInclude(x => x.Group)
+            .Include(x => x.Avaliador)
+            .Include(x => x.FormTemplate)
+            .ThenInclude(x => x.Questions)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public Task AddAsync(Evaluation evaluation, CancellationToken cancellationToken = default) =>
         _context.Evaluations.AddAsync(evaluation, cancellationToken).AsTask();
@@ -53,8 +88,13 @@ public sealed class EvaluationRepository : IEvaluationRepository
         PatientNome = evaluation.Patient.Nome,
         AvaliadorId = evaluation.AvaliadorId,
         AvaliadorNome = evaluation.Avaliador.Nome,
+        GroupId = evaluation.GroupId,
+        GroupNome = evaluation.Patient.Group.Nome,
+        FormTemplateId = evaluation.FormTemplateId,
+        FormNome = evaluation.FormTemplate?.Nome,
         Respostas = new Dictionary<int, int>(evaluation.Respostas),
         ScoreTotal = evaluation.ScoreTotal,
+        PesoTotal = evaluation.PesoTotal,
         Classificacao = evaluation.Classificacao,
         DataAvaliacao = evaluation.DataAvaliacao
     };

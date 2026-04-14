@@ -11,6 +11,12 @@ public sealed class PatientResponseDto
     [JsonPropertyName("avaliador_id")]
     public int? AvaliadorId { get; init; }
 
+    [JsonPropertyName("group_id")]
+    public int GroupId { get; init; }
+
+    [JsonPropertyName("group_nome")]
+    public string GroupNome { get; init; } = string.Empty;
+
     [JsonPropertyName("criado_em")]
     public DateTime CriadoEm { get; init; }
 }
