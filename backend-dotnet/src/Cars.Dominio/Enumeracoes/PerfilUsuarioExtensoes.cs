@@ -17,6 +17,7 @@ public static class UserRoleExtensions
         "analista" => UserRole.Analyst,
         "agente_saude" => UserRole.HealthAgent,
         "agente-saude" => UserRole.HealthAgent,
+        "avaliador" => UserRole.HealthAgent,
         "gestor" => UserRole.Manager,
         _ => throw new InvalidOperationException("Perfil de usuario invalido.")
     };

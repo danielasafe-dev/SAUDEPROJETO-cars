@@ -12,13 +12,38 @@ interface DashboardData {
   recentEvaluations: Evaluation[];
 }
 
+// Handles both camelCase (now default) and PascalCase (legacy).
+function mapBackendStats(raw: unknown): DashboardData {
+  const r = raw as Record<string, unknown>;
+  return {
+    total: Number(r.total ?? 0),
+    averageScore: Number(r.averageScore ?? 0),
+    lastMonth: Number(r.lastMonth ?? 0),
+    classificationDistribution: {
+      semIndicativo: Number((r.classificationDistribution as Record<string, unknown>)?.semIndicativo ?? 0),
+      teaLeveModerado: Number((r.classificationDistribution as Record<string, unknown>)?.teaLeveModerado ?? 0),
+      teaGrave: Number((r.classificationDistribution as Record<string, unknown>)?.teaGrave ?? 0),
+    },
+    recentEvaluations: (Array.isArray(r.recentEvaluations) ? r.recentEvaluations : []) as Evaluation[],
+  };
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getDashboardStats().then(setStats);
+    getDashboardStats()
+      .then((raw) => {
+        setStats(mapBackendStats(raw));
+      })
+      .catch((err) => {
+        console.error('Erro ao carregar dashboard:', err);
+        setError('Erro ao carregar dashboard');
+      });
   }, []);
 
+  if (error && !stats) return <div className="text-center py-8 text-red-400">{error}</div>;
   if (!stats) return <div className="text-center py-8 text-gray-400">Carregando...</div>;
 
   return (

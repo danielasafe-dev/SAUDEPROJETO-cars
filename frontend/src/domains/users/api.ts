@@ -1,5 +1,6 @@
 import { isMockMode, api } from '@/shared/api/client';
 import { mockUsers } from '@/shared/api/mockData';
+import type { UserRole, User } from '@/types';
 
 export async function getUsers() {
   if (isMockMode()) {
@@ -13,7 +14,7 @@ export async function createUser(data: {
   nome: string;
   email: string;
   password: string;
-  role: 'admin' | 'avaliador';
+  role: UserRole;
 }) {
   if (isMockMode()) {
     await new Promise((r) => setTimeout(r, 300));
@@ -22,7 +23,7 @@ export async function createUser(data: {
       ...data,
       ativo: true,
       criado_em: new Date().toISOString(),
-    };
+    } satisfies User;
     mockUsers.push(u);
     return u;
   }

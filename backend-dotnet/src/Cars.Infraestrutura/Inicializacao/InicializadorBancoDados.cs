@@ -17,9 +17,13 @@ public static class DatabaseInitializer
 
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var seedOptions = scope.ServiceProvider.GetRequiredService<IOptions<SeedOptions>>().Value;
+        var databaseInitializationOptions = scope.ServiceProvider.GetRequiredService<IOptions<DatabaseInitializationOptions>>().Value;
         var passwordHasher = scope.ServiceProvider.GetRequiredService<PasswordHasherAdapter>();
 
-        await context.Database.MigrateAsync(cancellationToken);
+        if (databaseInitializationOptions.ApplyMigrationsOnStartup)
+        {
+            await context.Database.MigrateAsync(cancellationToken);
+        }
 
         if (!seedOptions.Enabled)
         {

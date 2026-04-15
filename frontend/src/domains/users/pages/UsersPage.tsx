@@ -1,7 +1,34 @@
 import { useEffect, useState } from 'react';
 import { getUsers, createUser, deactivateUser } from '../api';
-import type { User } from '@/types';
+import type { User, UserRole } from '@/types';
 import { Plus } from 'lucide-react';
+
+const roleOptions: { value: UserRole; label: string }[] = [
+  { value: 'admin', label: 'Administrador' },
+  { value: 'gestor', label: 'Gestor' },
+  { value: 'agente_saude', label: 'Agente de Saúde' },
+  { value: 'analista', label: 'Analista' },
+];
+
+function formatRole(role: string): string {
+  switch (role) {
+    case 'admin': return 'Administrador';
+    case 'gestor': return 'Gestor';
+    case 'agente_saude': return 'Agente de Saúde';
+    case 'analista': return 'Analista';
+    default: return role;
+  }
+}
+
+function roleBadgeCls(role: string): string {
+  switch (role) {
+    case 'admin': return 'bg-purple-100 text-purple-700';
+    case 'gestor': return 'bg-orange-100 text-orange-700';
+    case 'agente_saude': return 'bg-blue-100 text-blue-700';
+    case 'analista': return 'bg-gray-100 text-gray-700';
+    default: return 'bg-gray-100 text-gray-700';
+  }
+}
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -9,7 +36,7 @@ export default function UsersPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'admin' | 'avaliador'>('avaliador');
+  const [role, setRole] = useState<UserRole>('agente_saude');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -87,11 +114,12 @@ export default function UsersPage() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Perfil</label>
-              <select value={role} onChange={(e) => setRole(e.target.value as 'admin' | 'avaliador')}
+              <select value={role} onChange={(e) => setRole(e.target.value as UserRole)}
                 className="px-3 py-2 border border-gray-300 rounded-lg outline-none"
               >
-                <option value="avaliador">Avaliador</option>
-                <option value="admin">Admin</option>
+                {roleOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
               </select>
             </div>
             <div className="w-full text-xs text-gray-500">
@@ -128,9 +156,9 @@ export default function UsersPage() {
                 <td className="px-4 py-2 font-medium">{u.nome}</td>
                 <td className="px-4 py-2 text-gray-500">{u.email}</td>
                 <td className="px-4 py-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                    u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
-                  }`}>{u.role === 'admin' ? 'Administrador' : 'Avaliador'}</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${roleBadgeCls(u.role)}`}>
+                    {formatRole(u.role)}
+                  </span>
                 </td>
                 <td className="px-4 py-2">
                   <span className={`px-2 py-1 rounded-full text-xs font-bold ${

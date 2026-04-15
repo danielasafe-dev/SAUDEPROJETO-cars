@@ -8,24 +8,26 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+var developmentUrlOptions = builder.ConfigureDevelopmentUrls();
+
+builder.Services.AddSingleton(developmentUrlOptions);
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+        // Default camelCase policy for frontend compatibility
     });
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("ReactLocal", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5173",
-                "http://127.0.0.1:5173",
-                "http://localhost:3000",
-                "http://127.0.0.1:3000")
+        policy.SetIsOriginAllowed(origin =>
+            Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
+            (string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(uri.Host, "127.0.0.1", StringComparison.OrdinalIgnoreCase)))
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -70,6 +72,8 @@ builder.Services.AddSwaggerDocumentation();
 
 var app = builder.Build();
 
+app.TryStartFrontendDevServer();
+
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
@@ -78,7 +82,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors("ReactLocal");
 app.UseAuthentication();
 app.UseAuthorization();

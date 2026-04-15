@@ -1,3 +1,5 @@
+import type { UserRole } from '@/types';
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -9,7 +11,7 @@ export interface TokenResponse {
     id: number;
     nome: string;
     email: string;
-    role: 'admin' | 'avaliador';
+    role: UserRole;
     ativo: boolean;
     criado_em: string;
   };

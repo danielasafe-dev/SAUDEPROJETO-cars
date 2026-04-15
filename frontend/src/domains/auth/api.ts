@@ -1,6 +1,23 @@
 import { isMockMode, api } from '@/shared/api/client';
 import type { LoginRequest, TokenResponse } from './types';
 
+function normalizeLoginResponse(payload: unknown): TokenResponse {
+  const res = payload as Record<string, unknown>;
+  const rawUser = (res.user ?? res.User ?? {}) as Record<string, unknown>;
+
+  return {
+    access_token: String(res.access_token ?? res.AccessToken ?? ''),
+    user: {
+      id: Number(rawUser.id ?? rawUser.Id ?? 0),
+      nome: String(rawUser.nome ?? rawUser.Nome ?? ''),
+      email: String(rawUser.email ?? rawUser.Email ?? ''),
+      role: String(rawUser.role ?? rawUser.Role ?? '') as TokenResponse['user']['role'],
+      ativo: Boolean(rawUser.ativo ?? rawUser.Ativo ?? false),
+      criado_em: String(rawUser.criado_em ?? rawUser.criadoEm ?? rawUser.CriadoEm ?? ''),
+    },
+  };
+}
+
 export async function loginReq(data: LoginRequest): Promise<TokenResponse> {
   if (isMockMode()) {
     await new Promise((r) => setTimeout(r, 600));
@@ -20,6 +37,6 @@ export async function loginReq(data: LoginRequest): Promise<TokenResponse> {
     throw new Error('Credenciais inválidas');
   }
 
-  const { data: res } = await api.post<TokenResponse>('/api/auth/login', data);
-  return res;
+  const { data: res } = await api.post('/api/auth/login', data);
+  return normalizeLoginResponse(res);
 }
