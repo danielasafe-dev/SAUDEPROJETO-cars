@@ -39,7 +39,7 @@ public static class DatabaseInitializer
 
         context.Users.Add(new User(
             seedOptions.AdminName,
-            new Email(seedOptions.AdminEmail),
+            new Cars.Domain.ValueObjects.Email(seedOptions.AdminEmail),
             passwordHasher.Hash(seedOptions.AdminPassword),
             UserRole.Admin));
 

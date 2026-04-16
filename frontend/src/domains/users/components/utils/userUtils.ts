@@ -3,7 +3,6 @@ import type { UserRole } from '@/types';
 export const roleOptions: { value: UserRole; label: string }[] = [
   { value: 'admin', label: 'Administrador' },
   { value: 'gestor', label: 'Gestor' },
-  { value: 'chefia', label: 'Chefia' },
   { value: 'agente_saude', label: 'Agente de Saude' },
   { value: 'analista', label: 'Analista' },
 ];
@@ -14,8 +13,6 @@ export function formatRole(role: string): string {
       return 'Administrador';
     case 'gestor':
       return 'Gestor';
-    case 'chefia':
-      return 'Chefia';
     case 'agente_saude':
       return 'Agente de Saude';
     case 'analista':
@@ -25,22 +22,12 @@ export function formatRole(role: string): string {
   }
 }
 
-export function shouldShowLinkedLeadershipField(role: UserRole): boolean {
-  return role !== 'admin';
-}
-
-export function isLinkedLeadershipRequired(role: UserRole): boolean {
-  return role !== 'admin' && role !== 'chefia';
-}
-
 export function roleBadgeCls(role: string): string {
   switch (role) {
     case 'admin':
       return 'bg-purple-100 text-purple-700';
     case 'gestor':
       return 'bg-orange-100 text-orange-700';
-    case 'chefia':
-      return 'bg-amber-100 text-amber-700';
     case 'agente_saude':
       return 'bg-blue-100 text-blue-700';
     case 'analista':

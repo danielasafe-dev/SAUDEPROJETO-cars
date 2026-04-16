@@ -18,7 +18,5 @@ public sealed class CreateUserRequestDto
     [Required]
     public string Role { get; init; } = "agente_saude";
 
-    public int? ChefiaId { get; init; }
-
     public IReadOnlyCollection<int> GroupIds { get; init; } = [];
 }

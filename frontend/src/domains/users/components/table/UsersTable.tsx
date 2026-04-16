@@ -1,4 +1,4 @@
-import { Eye, Pencil, UserX } from 'lucide-react';
+import { Eye, KeyRound, Pencil, UserX } from 'lucide-react';
 import type { User } from '@/types';
 import { formatCreatedAt, formatRole, roleBadgeCls, statusBadgeCls } from '../utils/userUtils';
 
@@ -6,10 +6,11 @@ interface UsersTableProps {
   users: User[];
   onView: (user: User) => void;
   onEdit: (user: User) => void;
+  onSendInvite: (user: User) => void;
   onDeactivate: (user: User) => void;
 }
 
-export default function UsersTable({ users, onView, onEdit, onDeactivate }: UsersTableProps) {
+export default function UsersTable({ users, onView, onEdit, onSendInvite, onDeactivate }: UsersTableProps) {
   if (!users.length) {
     return (
       <div className="rounded-xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-500">
@@ -65,6 +66,16 @@ export default function UsersTable({ users, onView, onEdit, onDeactivate }: User
                     <Pencil className="h-3.5 w-3.5" />
                     Editar
                   </button>
+                  {user.ativo && (
+                    <button
+                      type="button"
+                      onClick={() => onSendInvite(user)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-700 transition hover:bg-amber-50"
+                    >
+                      <KeyRound className="h-3.5 w-3.5" />
+                      Enviar senha
+                    </button>
+                  )}
                   {user.ativo && (
                     <button
                       type="button"

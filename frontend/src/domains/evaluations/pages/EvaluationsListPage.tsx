@@ -1,17 +1,28 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { getEvals } from '@/domains/dashboard/api';
 import type { Evaluation } from '@/types';
-import { Eye } from 'lucide-react';
+import { Eye, Plus } from 'lucide-react';
+import EvaluationCreateDialog from '../components/EvaluationCreateDialog';
 
 export default function EvaluationsListPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [evals, setEvals] = useState<Evaluation[]>([]);
   const [filter, setFilter] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     getEvals().then((data: Evaluation[]) => setEvals(data));
   }, []);
+
+  useEffect(() => {
+    const state = location.state as { openNewEvaluation?: boolean } | null;
+    if (state?.openNewEvaluation) {
+      setCreateOpen(true);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.pathname, location.state, navigate]);
 
   const filtered = evals.filter((e) =>
     e.patientNome.toLowerCase().includes(filter.toLowerCase())
@@ -25,27 +36,36 @@ export default function EvaluationsListPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold">Avaliações</h2>
-        <p className="text-sm text-gray-500">Histórico completo</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold">Avaliacoes</h2>
+          <p className="text-sm text-gray-500">Historico completo</p>
+        </div>
+        <button
+          onClick={() => setCreateOpen(true)}
+          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+        >
+          <Plus className="h-4 w-4" />
+          Nova Avaliacao
+        </button>
       </div>
 
       <input
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
         placeholder="Buscar por paciente..."
-        className="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full max-w-sm rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
       />
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="border-b border-gray-200 bg-gray-50">
             <tr>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Paciente</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Avaliador</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Data</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Score</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Ações</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">Paciente</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">Avaliador</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">Data</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">Score</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">Acoes</th>
             </tr>
           </thead>
           <tbody>
@@ -55,16 +75,16 @@ export default function EvaluationsListPage() {
                 <td className="px-4 py-2 text-gray-500">{e.avaliadorNome}</td>
                 <td className="px-4 py-2 text-gray-500">{new Date(e.dataAvaliacao).toLocaleDateString('pt-BR')}</td>
                 <td className="px-4 py-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${badgeCls(e.scoreTotal)}`}>
+                  <span className={`rounded-full px-2 py-1 text-xs font-bold ${badgeCls(e.scoreTotal)}`}>
                     {e.scoreTotal}/60
                   </span>
                 </td>
                 <td className="px-4 py-2">
                   <button
                     onClick={() => navigate(`/avaliacoes/${e.id}`)}
-                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800"
                   >
-                    <Eye className="w-3 h-3" />
+                    <Eye className="h-3 w-3" />
                     Visualizar
                   </button>
                 </td>
@@ -73,13 +93,15 @@ export default function EvaluationsListPage() {
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
-                  Nenhuma avaliação encontrada
+                  Nenhuma avaliacao encontrada
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+
+      <EvaluationCreateDialog open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
   );
 }

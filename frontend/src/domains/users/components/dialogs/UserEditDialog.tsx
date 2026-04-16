@@ -17,7 +17,6 @@ function buildInitialValues(user: User | null): UserFormValues {
     email: user?.email ?? '',
     confirmEmail: user?.email ?? '',
     role: user?.role ?? 'agente_saude',
-    chefiaId: user?.chefia_id ? String(user.chefia_id) : '',
   };
 }
 

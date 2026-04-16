@@ -9,4 +9,5 @@ public interface IGroupRepository
     Task<Group?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<Group?> GetDetailedByIdAsync(int id, CancellationToken cancellationToken = default);
     Task AddAsync(Group group, CancellationToken cancellationToken = default);
+    void Remove(Group group);
 }

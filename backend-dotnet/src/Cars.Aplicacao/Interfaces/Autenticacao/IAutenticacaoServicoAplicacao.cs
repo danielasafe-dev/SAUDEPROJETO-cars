@@ -8,4 +8,6 @@ public interface IAuthAppService
     Task<TokenResponseDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default);
     Task<UserResponseDto> GetCurrentUserAsync(int userId, CancellationToken cancellationToken = default);
     Task<UserResponseDto> RegisterAsync(CreateUserRequestDto request, int actorUserId, CancellationToken cancellationToken = default);
+    Task SendPasswordInviteAsync(int targetUserId, int actorUserId, CancellationToken cancellationToken = default);
+    Task SetPasswordFromInviteAsync(SetPasswordFromInviteRequestDto request, CancellationToken cancellationToken = default);
 }

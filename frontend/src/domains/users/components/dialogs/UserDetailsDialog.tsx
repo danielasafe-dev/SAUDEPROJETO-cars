@@ -54,7 +54,6 @@ export default function UserDetailsDialog({ user, open, onClose }: UserDetailsDi
               </span>
             }
           />
-          <InfoRow label="Chefia vinculada" value={user.chefia_nome ?? 'Nao vinculada'} />
           <InfoRow label="Data de cadastro" value={formatCreatedAt(user.criado_em)} />
           <InfoRow label="Identificador" value={`#${user.id}`} />
         </div>

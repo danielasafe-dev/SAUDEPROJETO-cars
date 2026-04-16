@@ -17,7 +17,6 @@ public sealed class UserRepository : IUserRepository
     public Task<List<User>> ListAsync(CancellationToken cancellationToken = default) =>
         _context.Users
             .AsNoTracking()
-            .Include(x => x.Chefia)
             .Include(x => x.GroupMemberships)
             .ThenInclude(x => x.Group)
             .Include(x => x.ManagedGroups)
@@ -33,7 +32,6 @@ public sealed class UserRepository : IUserRepository
 
         return _context.Users
             .AsNoTracking()
-            .Include(x => x.Chefia)
             .Include(x => x.GroupMemberships)
             .ThenInclude(x => x.Group)
             .Include(x => x.ManagedGroups)
@@ -49,7 +47,6 @@ public sealed class UserRepository : IUserRepository
 
     public Task<User?> GetDetailedByIdAsync(int id, CancellationToken cancellationToken = default) =>
         _context.Users
-            .Include(x => x.Chefia)
             .Include(x => x.GroupMemberships)
             .ThenInclude(x => x.Group)
             .Include(x => x.ManagedGroups)

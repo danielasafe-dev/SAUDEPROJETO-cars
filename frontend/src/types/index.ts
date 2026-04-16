@@ -1,5 +1,5 @@
 // Shared domain types
-export type UserRole = 'admin' | 'analista' | 'agente_saude' | 'gestor' | 'chefia';
+export type UserRole = 'admin' | 'analista' | 'agente_saude' | 'gestor';
 
 export interface User {
   id: number;
@@ -7,8 +7,6 @@ export interface User {
   email: string;
   role: UserRole;
   ativo: boolean;
-  chefia_id?: number | null;
-  chefia_nome?: string | null;
   criado_em: string;
 }
 

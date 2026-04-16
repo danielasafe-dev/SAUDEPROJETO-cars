@@ -11,12 +11,18 @@ public sealed class GroupsAppService : IGroupsAppService
 {
     private readonly IGroupRepository _groupRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IEvaluationRepository _evaluationRepository;
     private readonly IUnitOfWork _unitOfWork;
 
-    public GroupsAppService(IGroupRepository groupRepository, IUserRepository userRepository, IUnitOfWork unitOfWork)
+    public GroupsAppService(
+        IGroupRepository groupRepository,
+        IUserRepository userRepository,
+        IEvaluationRepository evaluationRepository,
+        IUnitOfWork unitOfWork)
     {
         _groupRepository = groupRepository;
         _userRepository = userRepository;
+        _evaluationRepository = evaluationRepository;
         _unitOfWork = unitOfWork;
     }
 
@@ -57,7 +63,7 @@ public sealed class GroupsAppService : IGroupsAppService
 
         if (!gestor.Role.HasManagerPrivileges())
         {
-            throw new InvalidOperationException("O responsavel informado precisa ter perfil de gestor ou chefia.");
+            throw new InvalidOperationException("O responsavel informado precisa ter perfil de gestor.");
         }
 
         var group = new Cars.Domain.Entities.Group(request.Nome, gestor.Id);
@@ -94,7 +100,7 @@ public sealed class GroupsAppService : IGroupsAppService
 
         if (!gestor.Role.HasManagerPrivileges())
         {
-            throw new InvalidOperationException("O responsavel informado precisa ter perfil de gestor ou chefia.");
+            throw new InvalidOperationException("O responsavel informado precisa ter perfil de gestor.");
         }
 
         group.Update(request.Nome, gestor.Id);
@@ -104,5 +110,42 @@ public sealed class GroupsAppService : IGroupsAppService
             ?? throw new InvalidOperationException("Nao foi possivel carregar o grupo atualizado.");
 
         return updated.ToDto();
+    }
+
+    public async Task DeleteAsync(int groupId, int actorUserId, CancellationToken cancellationToken = default)
+    {
+        var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
+            ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
+
+        if (!actor.Role.CanManageGroups())
+        {
+            throw new UnauthorizedAccessException("Usuario sem permissao para excluir grupos.");
+        }
+
+        var group = await _groupRepository.GetDetailedByIdAsync(groupId, cancellationToken)
+            ?? throw new KeyNotFoundException("Grupo nao encontrado.");
+
+        if (actor.Role.HasManagerPrivileges() && group.GestorId != actor.Id)
+        {
+            throw new UnauthorizedAccessException("Perfil de gestao so pode excluir o proprio grupo.");
+        }
+
+        if (group.Patients.Count != 0)
+        {
+            throw new InvalidOperationException("Nao e possivel excluir grupo com pacientes vinculados.");
+        }
+
+        if (group.Forms.Count != 0)
+        {
+            throw new InvalidOperationException("Nao e possivel excluir grupo com formularios vinculados.");
+        }
+
+        if (await _evaluationRepository.AnyByGroupIdAsync(group.Id, cancellationToken))
+        {
+            throw new InvalidOperationException("Nao e possivel excluir grupo com avaliacoes vinculadas.");
+        }
+
+        _groupRepository.Remove(group);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

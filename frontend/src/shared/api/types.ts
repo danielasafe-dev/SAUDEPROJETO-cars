@@ -21,10 +21,8 @@ export interface TokenResponse {
     id: number;
     nome: string;
     email: string;
-    role: 'admin' | 'analista' | 'agente_saude' | 'gestor' | 'chefia' | 'avaliador';
+    role: 'admin' | 'analista' | 'agente_saude' | 'gestor' | 'avaliador';
     ativo: boolean;
-    chefia_id?: number | null;
-    chefia_nome?: string | null;
     criado_em: string;
   };
 }

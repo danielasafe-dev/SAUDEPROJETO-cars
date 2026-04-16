@@ -5,6 +5,11 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface SetPasswordFromInviteRequest {
+  token: string;
+  password: string;
+}
+
 export interface TokenResponse {
   access_token: string;
   user: {
@@ -13,8 +18,6 @@ export interface TokenResponse {
     email: string;
     role: UserRole;
     ativo: boolean;
-    chefia_id?: number | null;
-    chefia_nome?: string | null;
     criado_em: string;
   };
 }

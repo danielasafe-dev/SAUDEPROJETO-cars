@@ -46,8 +46,12 @@ public sealed class GroupRepository : IGroupRepository
             .Include(x => x.Gestor)
             .Include(x => x.Members)
             .ThenInclude(x => x.User)
+            .Include(x => x.Patients)
+            .Include(x => x.Forms)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public Task AddAsync(Group group, CancellationToken cancellationToken = default) =>
         _context.Groups.AddAsync(group, cancellationToken).AsTask();
+
+    public void Remove(Group group) => _context.Groups.Remove(group);
 }

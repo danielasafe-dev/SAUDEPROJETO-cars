@@ -8,15 +8,18 @@ public sealed class PasswordHasherAdapter : IPasswordHasher
 {
     private readonly PasswordHasher<User> _passwordHasher = new();
 
+    private static User CreatePasswordHasherUser() =>
+        new("placeholder", new("placeholder@local"), "seed", Domain.Enums.UserRole.Admin);
+
     public string Hash(string password)
     {
-        var user = new User("placeholder", new("placeholder@local"), "seed", Domain.Enums.UserRole.HealthAgent);
+        var user = CreatePasswordHasherUser();
         return _passwordHasher.HashPassword(user, password);
     }
 
     public bool Verify(string password, string passwordHash)
     {
-        var user = new User("placeholder", new("placeholder@local"), "seed", Domain.Enums.UserRole.HealthAgent);
+        var user = CreatePasswordHasherUser();
         var result = _passwordHasher.VerifyHashedPassword(user, passwordHash, password);
         return result is PasswordVerificationResult.Success or PasswordVerificationResult.SuccessRehashNeeded;
     }

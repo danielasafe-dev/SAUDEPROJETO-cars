@@ -40,4 +40,12 @@ public sealed class GroupsController : ControllerBase
         var result = await _groupsAppService.UpdateAsync(groupId, request, User.GetUserId(), cancellationToken);
         return Ok(result);
     }
+
+    [HttpDelete("{groupId:int}")]
+    [Authorize(Policy = "GroupManagement")]
+    public async Task<IActionResult> Delete(int groupId, CancellationToken cancellationToken)
+    {
+        await _groupsAppService.DeleteAsync(groupId, User.GetUserId(), cancellationToken);
+        return Ok(new { message = "Grupo excluido" });
+    }
 }

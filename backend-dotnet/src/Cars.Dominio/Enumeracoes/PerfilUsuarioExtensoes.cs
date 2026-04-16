@@ -8,7 +8,6 @@ public static class UserRoleExtensions
         UserRole.Analyst => "analista",
         UserRole.HealthAgent => "agente_saude",
         UserRole.Manager => "gestor",
-        UserRole.Leadership => "chefia",
         _ => "agente_saude"
     };
 
@@ -20,15 +19,14 @@ public static class UserRoleExtensions
         "agente-saude" => UserRole.HealthAgent,
         "avaliador" => UserRole.HealthAgent,
         "gestor" => UserRole.Manager,
-        "chefia" => UserRole.Leadership,
         _ => throw new InvalidOperationException("Perfil de usuario invalido.")
     };
 
     public static bool HasManagerPrivileges(this UserRole role) =>
-        role is UserRole.Manager or UserRole.Leadership;
+        role == UserRole.Manager;
 
     public static bool CanEvaluate(this UserRole role) =>
-        role is UserRole.Admin or UserRole.HealthAgent or UserRole.Manager or UserRole.Leadership;
+        role is UserRole.Admin or UserRole.HealthAgent or UserRole.Manager;
 
     public static bool CanManageUsers(this UserRole role) =>
         role is UserRole.Admin || role.HasManagerPrivileges();

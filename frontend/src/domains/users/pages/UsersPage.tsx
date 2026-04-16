@@ -1,11 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
-import { createUser, deactivateUser, getUsers, updateUser, type CreateUserInput, type UpdateUserInput } from '../api';
+import {
+  createUser,
+  deactivateUser,
+  getUsers,
+  sendUserPasswordInvite,
+  updateUser,
+  type CreateUserInput,
+  type UpdateUserInput,
+} from '../api';
 import UsersTable from '../components/table/UsersTable';
 import UserCreateDialog from '../components/dialogs/UserCreateDialog';
 import UserDetailsDialog from '../components/dialogs/UserDetailsDialog';
 import UserEditDialog from '../components/dialogs/UserEditDialog';
 import UserDeactivateDialog from '../components/dialogs/UserDeactivateDialog';
+import UserPasswordInviteDialog from '../components/dialogs/UserPasswordInviteDialog';
 import type { User } from '@/types';
 
 export default function UsersPage() {
@@ -15,6 +24,7 @@ export default function UsersPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [detailsUser, setDetailsUser] = useState<User | null>(null);
   const [editUser, setEditUser] = useState<User | null>(null);
+  const [passwordInviteTarget, setPasswordInviteTarget] = useState<User | null>(null);
   const [deactivateTarget, setDeactivateTarget] = useState<User | null>(null);
 
   const refreshUsers = async () => {
@@ -54,7 +64,9 @@ export default function UsersPage() {
     await refreshUsers();
   };
 
-  const chefiaUsers = users.filter((user) => user.role === 'chefia' && user.ativo);
+  const handlePasswordInvite = async (userId: number) => {
+    await sendUserPasswordInvite(userId);
+  };
 
   return (
     <div className="space-y-6">
@@ -89,6 +101,7 @@ export default function UsersPage() {
           users={users}
           onView={setDetailsUser}
           onEdit={setEditUser}
+          onSendInvite={setPasswordInviteTarget}
           onDeactivate={setDeactivateTarget}
         />
       )}
@@ -97,10 +110,15 @@ export default function UsersPage() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onSubmit={handleCreate}
-        chefiaUsers={chefiaUsers}
       />
       <UserDetailsDialog user={detailsUser} open={detailsUser !== null} onClose={() => setDetailsUser(null)} />
       <UserEditDialog user={editUser} open={editUser !== null} onClose={() => setEditUser(null)} onSubmit={handleEdit} />
+      <UserPasswordInviteDialog
+        user={passwordInviteTarget}
+        open={passwordInviteTarget !== null}
+        onClose={() => setPasswordInviteTarget(null)}
+        onConfirm={handlePasswordInvite}
+      />
       <UserDeactivateDialog
         user={deactivateTarget}
         open={deactivateTarget !== null}

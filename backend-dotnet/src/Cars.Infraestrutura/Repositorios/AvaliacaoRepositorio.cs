@@ -64,6 +64,9 @@ public sealed class EvaluationRepository : IEvaluationRepository
         return evaluation is null ? null : Map(evaluation);
     }
 
+    public Task<bool> AnyByGroupIdAsync(int groupId, CancellationToken cancellationToken = default) =>
+        _context.Evaluations.AnyAsync(x => x.GroupId == groupId, cancellationToken);
+
     public Task<Evaluation?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
         _context.Evaluations.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 

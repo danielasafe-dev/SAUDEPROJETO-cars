@@ -3,6 +3,8 @@ import { useAuthStore } from '@/shared/store/authStore';
 import {
   LayoutDashboard,
   ClipboardList,
+  ClipboardCheck,
+  Layers3,
   Users,
   UserCog,
   LogOut,
@@ -14,7 +16,9 @@ import { useState } from 'react';
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/avaliacoes', icon: ClipboardList, label: 'Avaliacoes' },
+  { to: '/formularios', icon: ClipboardCheck, label: 'Formularios' },
   { to: '/pacientes', icon: Users, label: 'Pacientes' },
+  { to: '/grupos', icon: Layers3, label: 'Grupos', userManagementOnly: true },
   { to: '/usuarios', icon: UserCog, label: 'Usuarios', userManagementOnly: true },
 ];
 
@@ -68,15 +72,6 @@ export default function PageLayout() {
               {item.label}
             </Link>
           ))}
-
-          <Link
-            to="/nova-avaliacao"
-            className="mt-4 flex items-center gap-3 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <ClipboardList className="h-5 w-5" />
-            Nova Avaliacao
-          </Link>
         </nav>
 
         <div className="border-t border-gray-200 p-3">

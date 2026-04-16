@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react';
 import Dialog from '@/shared/components/dialog/Dialog';
-import type { User } from '@/types';
 import UserFormFields, { type UserFormValues } from '../forms/UserFormFields';
 import type { CreateUserInput } from '../../api';
-import { isLinkedLeadershipRequired, shouldShowLinkedLeadershipField } from '../utils/userUtils';
 
 interface UserCreateDialogProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: CreateUserInput) => Promise<void>;
-  chefiaUsers: User[];
 }
 
 const initialValues: UserFormValues = {
@@ -17,14 +14,12 @@ const initialValues: UserFormValues = {
   email: '',
   confirmEmail: '',
   role: 'agente_saude',
-  chefiaId: '',
 };
 
 export default function UserCreateDialog({
   open,
   onClose,
   onSubmit,
-  chefiaUsers,
 }: UserCreateDialogProps) {
   const [values, setValues] = useState<UserFormValues>(initialValues);
   const [loading, setLoading] = useState(false);
@@ -39,17 +34,10 @@ export default function UserCreateDialog({
   }, [open]);
 
   const handleChange = (field: keyof UserFormValues, value: string) => {
-    setValues((current) => {
-      if (field === 'role') {
-        return {
-          ...current,
-          role: value as UserFormValues['role'],
-          chefiaId: value === 'admin' ? '' : current.chefiaId,
-        };
-      }
-
-      return { ...current, [field]: value };
-    });
+    setValues((current) => ({
+      ...current,
+      [field]: field === 'role' ? value as UserFormValues['role'] : value,
+    }));
   };
 
   const handleSubmit = async (event: { preventDefault: () => void }) => {
@@ -60,31 +48,15 @@ export default function UserCreateDialog({
     try {
       const email = values.email.trim();
       const confirmEmail = values.confirmEmail.trim();
-      const showLinkedLeadershipField = shouldShowLinkedLeadershipField(values.role);
-      const linkedLeadershipRequired = isLinkedLeadershipRequired(values.role);
-      const selectedLinkedLeadershipId = values.chefiaId ? Number(values.chefiaId) : null;
 
       if (email !== confirmEmail) {
         throw new Error('Os e-mails informados precisam ser iguais.');
-      }
-
-      if (linkedLeadershipRequired && chefiaUsers.length === 0) {
-        throw new Error('Cadastre pelo menos uma chefia ativa antes de criar este perfil.');
-      }
-
-      if (showLinkedLeadershipField && linkedLeadershipRequired && !selectedLinkedLeadershipId) {
-        throw new Error('Selecione uma chefia vinculada valida para esse perfil.');
-      }
-
-      if (selectedLinkedLeadershipId && !chefiaUsers.some((user) => user.id === selectedLinkedLeadershipId)) {
-        throw new Error('A chefia vinculada precisa ser um usuario com perfil Chefia.');
       }
 
       await onSubmit({
         nome: values.nome.trim(),
         email,
         role: values.role,
-        chefiaId: selectedLinkedLeadershipId,
       });
       onClose();
     } catch (err: unknown) {
@@ -128,8 +100,6 @@ export default function UserCreateDialog({
           values={values}
           onChange={handleChange}
           disabled={loading}
-          chefiaOptions={chefiaUsers}
-          enableLinkedLeadershipField
           emailHint="Os dois campos de e-mail precisam ser iguais. A definicao da senha ficara para o fluxo de convite por e-mail."
         />
 

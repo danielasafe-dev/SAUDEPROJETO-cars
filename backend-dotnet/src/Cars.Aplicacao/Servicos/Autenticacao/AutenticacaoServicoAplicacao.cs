@@ -1,12 +1,15 @@
 using Cars.Application.DTOs.Auth;
 using Cars.Application.DTOs.Users;
+using Cars.Application.Configuration;
 using Cars.Application.Interfaces;
+using Cars.Application.Interfaces.Email;
 using Cars.Application.Interfaces.Seguranca;
 using Cars.Application.Mappings;
 using Cars.Application.Services.Access;
 using Cars.Domain.Enums;
 using Cars.Domain.Repositories;
 using Cars.Domain.ValueObjects;
+using Microsoft.Extensions.Options;
 
 namespace Cars.Application.Services;
 
@@ -16,6 +19,9 @@ public sealed class AuthAppService : IAuthAppService
     private readonly IGroupRepository _groupRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenService _tokenService;
+    private readonly IPasswordInviteTokenService _passwordInviteTokenService;
+    private readonly IEmailSender _emailSender;
+    private readonly PasswordInviteOptions _passwordInviteOptions;
     private readonly IUnitOfWork _unitOfWork;
 
     public AuthAppService(
@@ -23,12 +29,18 @@ public sealed class AuthAppService : IAuthAppService
         IGroupRepository groupRepository,
         IPasswordHasher passwordHasher,
         ITokenService tokenService,
+        IPasswordInviteTokenService passwordInviteTokenService,
+        IEmailSender emailSender,
+        IOptions<PasswordInviteOptions> passwordInviteOptions,
         IUnitOfWork unitOfWork)
     {
         _userRepository = userRepository;
         _groupRepository = groupRepository;
         _passwordHasher = passwordHasher;
         _tokenService = tokenService;
+        _passwordInviteTokenService = passwordInviteTokenService;
+        _emailSender = emailSender;
+        _passwordInviteOptions = passwordInviteOptions.Value;
         _unitOfWork = unitOfWork;
     }
 
@@ -117,7 +129,6 @@ public sealed class AuthAppService : IAuthAppService
             }
         }
 
-        var linkedLeadership = await ResolveLinkedLeadershipAsync(targetRole, request.ChefiaId, cancellationToken);
         var initialPassword = ResolveInitialPassword(request);
         var initialPasswordHash = string.IsNullOrWhiteSpace(initialPassword)
             ? string.Empty
@@ -127,8 +138,7 @@ public sealed class AuthAppService : IAuthAppService
             request.Nome,
             new Email(request.Email),
             initialPasswordHash,
-            targetRole,
-            linkedLeadership?.Id);
+            targetRole);
 
         await _userRepository.AddAsync(user, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -145,6 +155,68 @@ public sealed class AuthAppService : IAuthAppService
         return createdUser.ToDto();
     }
 
+    public async Task SendPasswordInviteAsync(int targetUserId, int actorUserId, CancellationToken cancellationToken = default)
+    {
+        var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
+            ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
+
+        if (!actor.Role.CanManageUsers())
+        {
+            throw new UnauthorizedAccessException("Usuario sem permissao para enviar convite de senha.");
+        }
+
+        var targetUser = await _userRepository.GetDetailedByIdAsync(targetUserId, cancellationToken)
+            ?? throw new KeyNotFoundException("Usuario nao encontrado.");
+
+        if (!targetUser.Ativo)
+        {
+            throw new InvalidOperationException("Nao e possivel enviar convite para usuario inativo.");
+        }
+
+        var token = _passwordInviteTokenService.Generate(targetUser);
+        var baseUrl = _passwordInviteOptions.FrontendBaseUrl.TrimEnd('/');
+        var inviteUrl = $"{baseUrl}/definir-senha?token={Uri.EscapeDataString(token)}";
+
+        var body =
+            $"Ola, {targetUser.Nome}.\n\n" +
+            "Voce recebeu um convite para definir sua senha de acesso ao CARS.\n\n" +
+            $"Acesse o link abaixo para criar sua senha:\n{inviteUrl}\n\n" +
+            $"Esse link expira em {_passwordInviteOptions.ExpireMinutes} minuto(s).\n\n" +
+            "Se voce nao esperava este convite, ignore este e-mail.";
+
+        await _emailSender.SendAsync(
+            targetUser.Email,
+            "Convite para definir senha no CARS",
+            body,
+            cancellationToken);
+    }
+
+    public async Task SetPasswordFromInviteAsync(SetPasswordFromInviteRequestDto request, CancellationToken cancellationToken = default)
+    {
+        var tokenPayload = _passwordInviteTokenService.Validate(request.Token);
+        var user = await _userRepository.GetByIdAsync(tokenPayload.UserId, cancellationToken)
+            ?? throw new KeyNotFoundException("Usuario do convite nao encontrado.");
+
+        if (!user.Ativo)
+        {
+            throw new InvalidOperationException("Nao e possivel definir senha para usuario inativo.");
+        }
+
+        if (!string.Equals(user.SenhaHash ?? string.Empty, tokenPayload.PasswordHashSnapshot, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("Este convite ja foi utilizado ou ficou invalido.");
+        }
+
+        var password = request.Password.Trim();
+        if (password.Length < 6)
+        {
+            throw new InvalidOperationException("A senha precisa ter pelo menos 6 caracteres.");
+        }
+
+        user.DefinePassword(_passwordHasher.Hash(password));
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
     private static string ResolveInitialPassword(CreateUserRequestDto request)
     {
         if (!string.IsNullOrWhiteSpace(request.Password))
@@ -153,48 +225,5 @@ public sealed class AuthAppService : IAuthAppService
         }
 
         return string.Empty;
-    }
-
-    private async Task<Cars.Domain.Entities.User?> ResolveLinkedLeadershipAsync(
-        UserRole targetRole,
-        int? chefiaId,
-        CancellationToken cancellationToken)
-    {
-        var normalizedChefiaId = chefiaId is > 0 ? chefiaId : null;
-
-        if (targetRole == UserRole.Admin)
-        {
-            if (normalizedChefiaId.HasValue)
-            {
-                throw new InvalidOperationException("Administrador nao pode ter chefia vinculada.");
-            }
-
-            return null;
-        }
-
-        if (!normalizedChefiaId.HasValue)
-        {
-            if (targetRole == UserRole.Leadership)
-            {
-                return null;
-            }
-
-            throw new InvalidOperationException("Usuarios deste perfil precisam de chefia vinculada.");
-        }
-
-        var linkedLeadership = await _userRepository.GetByIdAsync(normalizedChefiaId.Value, cancellationToken)
-            ?? throw new KeyNotFoundException("Chefia vinculada nao encontrada.");
-
-        if (!linkedLeadership.Ativo)
-        {
-            throw new InvalidOperationException("Chefia vinculada precisa estar ativa.");
-        }
-
-        if (linkedLeadership.Role != UserRole.Leadership)
-        {
-            throw new InvalidOperationException("Chefia vinculada precisa ser um usuario com perfil Chefia.");
-        }
-
-        return linkedLeadership;
     }
 }

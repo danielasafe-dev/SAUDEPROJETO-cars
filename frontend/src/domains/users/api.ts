@@ -6,7 +6,6 @@ export interface CreateUserInput {
   nome: string;
   email: string;
   role: UserRole;
-  chefiaId?: number | null;
 }
 
 export interface UpdateUserInput {
@@ -26,22 +25,6 @@ export async function getUsers() {
 export async function createUser(data: CreateUserInput) {
   if (isMockMode()) {
     await new Promise((r) => setTimeout(r, 300));
-    const normalizedChefiaId = data.chefiaId && data.chefiaId > 0 ? data.chefiaId : null;
-    const linkedLeadership = normalizedChefiaId
-      ? mockUsers.find((user) => user.id === normalizedChefiaId && user.role === 'chefia' && user.ativo)
-      : null;
-
-    if (data.role === 'admin' && normalizedChefiaId) {
-      throw new Error('Administrador nao pode ter chefia vinculada.');
-    }
-
-    if (data.role !== 'admin' && data.role !== 'chefia' && !normalizedChefiaId) {
-      throw new Error('Usuarios deste perfil precisam de chefia vinculada.');
-    }
-
-    if (normalizedChefiaId && !linkedLeadership) {
-      throw new Error('Chefia vinculada precisa ser um usuario ativo com perfil Chefia.');
-    }
 
     const u = {
       id: Date.now(),
@@ -49,8 +32,6 @@ export async function createUser(data: CreateUserInput) {
       email: data.email,
       role: data.role,
       ativo: true,
-      chefia_id: linkedLeadership?.id ?? null,
-      chefia_nome: linkedLeadership?.nome ?? null,
       criado_em: new Date().toISOString(),
     } satisfies User;
     mockUsers.push(u);
@@ -84,4 +65,17 @@ export async function deactivateUser(id: number) {
     return;
   }
   await api.put(`/api/users/${id}/deactivate`);
+}
+
+export async function sendUserPasswordInvite(id: number) {
+  if (isMockMode()) {
+    await new Promise((r) => setTimeout(r, 300));
+    const user = mockUsers.find((u) => u.id === id);
+    if (!user) {
+      throw new Error('Usuario nao encontrado');
+    }
+    return;
+  }
+
+  await api.post(`/api/auth/users/${id}/password-invite`);
 }

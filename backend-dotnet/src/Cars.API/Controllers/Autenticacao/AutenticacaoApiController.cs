@@ -41,4 +41,20 @@ public sealed class AuthController : ControllerBase
         var result = await _authAppService.RegisterAsync(request, User.GetUserId(), cancellationToken);
         return Ok(result);
     }
+
+    [HttpPost("users/{userId:int}/password-invite")]
+    [Authorize(Policy = "UserManagement")]
+    public async Task<IActionResult> SendPasswordInvite(int userId, CancellationToken cancellationToken)
+    {
+        await _authAppService.SendPasswordInviteAsync(userId, User.GetUserId(), cancellationToken);
+        return Ok(new { message = "Convite enviado" });
+    }
+
+    [HttpPost("set-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> SetPassword([FromBody] SetPasswordFromInviteRequestDto request, CancellationToken cancellationToken)
+    {
+        await _authAppService.SetPasswordFromInviteAsync(request, cancellationToken);
+        return Ok(new { message = "Senha definida com sucesso" });
+    }
 }
