@@ -64,7 +64,7 @@ public sealed class DashboardAppService : IDashboardAppService
         var scopedEvaluations = await _evaluationRepository.ListDetailedByGroupIdsAsync(accessScope.OperationalGroupIds, cancellationToken);
         var scopedForms = await _formRepository.ListByGroupIdsAsync(accessScope.OperationalGroupIds, cancellationToken);
         var scopedGroups = await _groupRepository.ListByIdsAsync(
-            actor.Role == UserRole.Manager ? accessScope.ManagedGroupIds : accessScope.OperationalGroupIds,
+            actor.Role.HasManagerPrivileges() ? accessScope.ManagedGroupIds : accessScope.OperationalGroupIds,
             cancellationToken);
 
         return new DashboardResponseDto

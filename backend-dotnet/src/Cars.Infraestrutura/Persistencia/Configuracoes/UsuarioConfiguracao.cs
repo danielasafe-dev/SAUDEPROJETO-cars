@@ -39,6 +39,11 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
                 value => UserRoleExtensions.FromApiValue(value))
             .IsRequired();
 
+        builder.Property(x => x.ChefiaId)
+            .HasColumnName("chefia_id");
+
+        builder.HasIndex(x => x.ChefiaId);
+
         builder.Property(x => x.Ativo)
             .HasColumnName("ativo")
             .HasDefaultValue(true)
@@ -53,6 +58,11 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasMany(x => x.ManagedGroups)
             .WithOne(x => x.Gestor)
             .HasForeignKey(x => x.GestorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(x => x.Chefia)
+            .WithMany(x => x.Subordinados)
+            .HasForeignKey(x => x.ChefiaId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(x => x.GroupMemberships)

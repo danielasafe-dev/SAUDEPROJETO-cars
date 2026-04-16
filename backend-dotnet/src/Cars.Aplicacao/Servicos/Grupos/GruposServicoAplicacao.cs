@@ -48,16 +48,16 @@ public sealed class GroupsAppService : IGroupsAppService
             throw new UnauthorizedAccessException("Usuario sem permissao para criar grupos.");
         }
 
-        var gestorId = actor.Role == UserRole.Manager
+        var gestorId = actor.Role.HasManagerPrivileges()
             ? actor.Id
             : request.GestorId ?? throw new InvalidOperationException("GestorId precisa ser informado.");
 
         var gestor = await _userRepository.GetByIdAsync(gestorId, cancellationToken)
-            ?? throw new KeyNotFoundException("Gestor nao encontrado.");
+            ?? throw new KeyNotFoundException("Responsavel pelo grupo nao encontrado.");
 
-        if (gestor.Role != UserRole.Manager)
+        if (!gestor.Role.HasManagerPrivileges())
         {
-            throw new InvalidOperationException("O gestor informado precisa ter perfil de gestor.");
+            throw new InvalidOperationException("O responsavel informado precisa ter perfil de gestor ou chefia.");
         }
 
         var group = new Cars.Domain.Entities.Group(request.Nome, gestor.Id);
@@ -83,18 +83,18 @@ public sealed class GroupsAppService : IGroupsAppService
         var group = await _groupRepository.GetByIdAsync(groupId, cancellationToken)
             ?? throw new KeyNotFoundException("Grupo nao encontrado.");
 
-        if (actor.Role == UserRole.Manager && group.GestorId != actor.Id)
+        if (actor.Role.HasManagerPrivileges() && group.GestorId != actor.Id)
         {
-            throw new UnauthorizedAccessException("Gestor so pode alterar o proprio grupo.");
+            throw new UnauthorizedAccessException("Perfil de gestao so pode alterar o proprio grupo.");
         }
 
-        var gestorId = actor.Role == UserRole.Manager ? actor.Id : request.GestorId;
+        var gestorId = actor.Role.HasManagerPrivileges() ? actor.Id : request.GestorId;
         var gestor = await _userRepository.GetByIdAsync(gestorId, cancellationToken)
-            ?? throw new KeyNotFoundException("Gestor nao encontrado.");
+            ?? throw new KeyNotFoundException("Responsavel pelo grupo nao encontrado.");
 
-        if (gestor.Role != UserRole.Manager)
+        if (!gestor.Role.HasManagerPrivileges())
         {
-            throw new InvalidOperationException("O gestor informado precisa ter perfil de gestor.");
+            throw new InvalidOperationException("O responsavel informado precisa ter perfil de gestor ou chefia.");
         }
 
         group.Update(request.Nome, gestor.Id);

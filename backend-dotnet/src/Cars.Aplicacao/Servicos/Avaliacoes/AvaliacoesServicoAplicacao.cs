@@ -113,7 +113,7 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
     public async Task DeleteAsync(int id, int actorUserId, CancellationToken cancellationToken = default)
     {
         var actor = await GetActorAsync(actorUserId, cancellationToken);
-        if (actor.Role is not UserRole.Admin and not UserRole.Manager)
+        if (actor.Role != UserRole.Admin && !actor.Role.HasManagerPrivileges())
         {
             throw new UnauthorizedAccessException("Usuario sem permissao para excluir avaliacoes.");
         }
@@ -121,7 +121,7 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
         var evaluation = await _evaluationRepository.GetByIdWithRelationsAsync(id, cancellationToken)
             ?? throw new KeyNotFoundException("Avaliacao nao encontrada.");
 
-        EnsureCanAccessGroup(actor, evaluation.GroupId, allowManagedOnly: actor.Role == UserRole.Manager);
+        EnsureCanAccessGroup(actor, evaluation.GroupId, allowManagedOnly: actor.Role.HasManagerPrivileges());
 
         _evaluationRepository.Remove(evaluation);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

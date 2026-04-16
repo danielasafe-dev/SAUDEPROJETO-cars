@@ -13,6 +13,8 @@ export interface TokenResponse {
     email: string;
     role: UserRole;
     ativo: boolean;
+    chefia_id?: number | null;
+    chefia_nome?: string | null;
     criado_em: string;
   };
 }

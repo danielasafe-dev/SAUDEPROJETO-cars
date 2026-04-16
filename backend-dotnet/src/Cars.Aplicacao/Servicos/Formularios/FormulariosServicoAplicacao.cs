@@ -150,7 +150,7 @@ public sealed class FormsAppService : IFormsAppService
 
         if (!accessScope.ManagedGroupIds.Contains(groupId.Value))
         {
-            throw new UnauthorizedAccessException("Gestor so pode criar ou alterar formularios do proprio grupo.");
+            throw new UnauthorizedAccessException("Perfil de gestao so pode criar ou alterar formularios do proprio grupo.");
         }
     }
 

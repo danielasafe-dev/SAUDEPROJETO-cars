@@ -7,6 +7,7 @@ interface AuthState {
   setAuth: (user: User, token: string) => void;
   logout: () => void;
   isAdmin: () => boolean;
+  canManageUsers: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -29,4 +30,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user: null, token: null });
   },
   isAdmin: () => get().user?.role === 'admin',
+  canManageUsers: () => {
+    const role = get().user?.role;
+    return role === 'admin' || role === 'gestor' || role === 'chefia';
+  },
 }));

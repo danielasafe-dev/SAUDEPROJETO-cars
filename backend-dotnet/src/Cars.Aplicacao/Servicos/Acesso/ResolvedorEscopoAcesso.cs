@@ -22,7 +22,7 @@ internal static class AccessScopeResolver
         return new AccessScope(
             user.Role == UserRole.Admin,
             user.Role == UserRole.Analyst,
-            user.Role == UserRole.Manager,
+            user.Role.HasManagerPrivileges(),
             managedGroupIds,
             memberGroupIds);
     }

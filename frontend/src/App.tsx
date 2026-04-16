@@ -13,6 +13,7 @@ import EvaluationDetailPage from '@/domains/evaluations/pages/EvaluationDetailPa
 
 function Private() {
   const user = useAuthStore((s) => s.user);
+  const canManageUsers = useAuthStore((s) => s.canManageUsers);
   return (
     <Routes>
       <Route path="/" element={<PageLayout />}>
@@ -22,7 +23,7 @@ function Private() {
         <Route path="nova-avaliacao" element={<EvaluationFormPage />} />
         <Route path="resultado" element={<EvaluationResultPage />} />
         <Route path="avaliacoes/:id" element={<EvaluationDetailPage />} />
-        {user?.role === 'admin' && (
+        {user && canManageUsers() && (
           <Route path="usuarios" element={<UsersPage />} />
         )}
         <Route path="*" element={<Navigate to="/" replace />} />

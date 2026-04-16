@@ -13,6 +13,12 @@ function normalizeLoginResponse(payload: unknown): TokenResponse {
       email: String(rawUser.email ?? rawUser.Email ?? ''),
       role: String(rawUser.role ?? rawUser.Role ?? '') as TokenResponse['user']['role'],
       ativo: Boolean(rawUser.ativo ?? rawUser.Ativo ?? false),
+      chefia_id: rawUser.chefia_id ?? rawUser.chefiaId ?? rawUser.ChefiaId
+        ? Number(rawUser.chefia_id ?? rawUser.chefiaId ?? rawUser.ChefiaId)
+        : null,
+      chefia_nome: rawUser.chefia_nome ?? rawUser.chefiaNome ?? rawUser.ChefiaNome
+        ? String(rawUser.chefia_nome ?? rawUser.chefiaNome ?? rawUser.ChefiaNome)
+        : null,
       criado_em: String(rawUser.criado_em ?? rawUser.criadoEm ?? rawUser.CriadoEm ?? ''),
     },
   };
@@ -30,6 +36,8 @@ export async function loginReq(data: LoginRequest): Promise<TokenResponse> {
           email: data.email,
           role: 'admin',
           ativo: true,
+          chefia_id: null,
+          chefia_nome: null,
           criado_em: new Date().toISOString(),
         },
       };

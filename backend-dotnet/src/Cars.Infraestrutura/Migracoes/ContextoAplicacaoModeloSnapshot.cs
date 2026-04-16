@@ -34,6 +34,10 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 .HasColumnName("ativo")
                 .HasDefaultValue(true);
 
+            b.Property<int?>("ChefiaId")
+                .HasColumnType("int")
+                .HasColumnName("chefia_id");
+
             b.Property<DateTime>("CriadoEm")
                 .ValueGeneratedOnAdd()
                 .HasColumnType("datetime2")
@@ -65,6 +69,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 .HasColumnName("senha_hash");
 
             b.HasKey("Id");
+            b.HasIndex("ChefiaId");
             b.HasIndex("Email").IsUnique();
             b.ToTable("users", (string)null);
         });
@@ -325,6 +330,16 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 .IsRequired();
 
             b.Navigation("Gestor");
+        });
+
+        modelBuilder.Entity("Cars.Domain.Entities.User", b =>
+        {
+            b.HasOne("Cars.Domain.Entities.User", "Chefia")
+                .WithMany("Subordinados")
+                .HasForeignKey("ChefiaId")
+                .OnDelete(DeleteBehavior.Restrict);
+
+            b.Navigation("Chefia");
         });
 
         modelBuilder.Entity("Cars.Domain.Entities.FormTemplate", b =>

@@ -19,6 +19,8 @@ public static class DomainToDtoMapper
         Role = user.Role.ToApiValue(),
         Ativo = user.Ativo,
         PodeAvaliar = user.Role.CanEvaluate(),
+        ChefiaId = user.ChefiaId,
+        ChefiaNome = user.Chefia?.Nome,
         GroupIds = user.GroupMemberships
             .Select(x => x.GroupId)
             .Distinct()

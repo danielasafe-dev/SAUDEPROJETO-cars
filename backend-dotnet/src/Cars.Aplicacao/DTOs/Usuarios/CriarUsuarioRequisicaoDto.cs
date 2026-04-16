@@ -12,12 +12,13 @@ public sealed class CreateUserRequestDto
     [EmailAddress]
     public string Email { get; init; } = string.Empty;
 
-    [Required]
     [MinLength(6)]
-    public string Password { get; init; } = string.Empty;
+    public string? Password { get; init; }
 
     [Required]
     public string Role { get; init; } = "agente_saude";
+
+    public int? ChefiaId { get; init; }
 
     public IReadOnlyCollection<int> GroupIds { get; init; } = [];
 }

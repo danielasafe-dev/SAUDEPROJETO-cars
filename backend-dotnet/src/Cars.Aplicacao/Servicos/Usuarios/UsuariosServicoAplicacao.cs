@@ -52,12 +52,12 @@ public sealed class UsersAppService : IUsersAppService
         var user = await _userRepository.GetDetailedByIdAsync(userId, cancellationToken)
             ?? throw new KeyNotFoundException("Usuario nao encontrado.");
 
-        if (actor.Role == UserRole.Manager)
+        if (actor.Role.HasManagerPrivileges())
         {
             var targetGroupIds = user.GroupMemberships.Select(x => x.GroupId).Distinct().ToArray();
             if (targetGroupIds.Any() && targetGroupIds.Any(x => !accessScope.ManagedGroupIds.Contains(x)))
             {
-                throw new UnauthorizedAccessException("Gestor so pode desativar usuarios dos grupos que gerencia.");
+                throw new UnauthorizedAccessException("Perfil de gestao so pode desativar usuarios dos grupos que gerencia.");
             }
         }
 
@@ -94,18 +94,18 @@ public sealed class UsersAppService : IUsersAppService
             throw new KeyNotFoundException("Um ou mais grupos informados nao existem.");
         }
 
-        if (actor.Role == UserRole.Manager)
+        if (actor.Role.HasManagerPrivileges())
         {
             var accessScope = AccessScopeResolver.Resolve(actor);
             if (requestedGroupIds.Any(x => !accessScope.ManagedGroupIds.Contains(x)))
             {
-                throw new UnauthorizedAccessException("Gestor so pode vincular usuarios aos grupos que gerencia.");
+                throw new UnauthorizedAccessException("Perfil de gestao so pode vincular usuarios aos grupos que gerencia.");
             }
 
             var currentGroupIds = user.GroupMemberships.Select(x => x.GroupId).Distinct().ToArray();
             if (currentGroupIds.Any(x => !accessScope.ManagedGroupIds.Contains(x)))
             {
-                throw new UnauthorizedAccessException("Gestor so pode alterar usuarios dentro dos grupos que gerencia.");
+                throw new UnauthorizedAccessException("Perfil de gestao so pode alterar usuarios dentro dos grupos que gerencia.");
             }
         }
 

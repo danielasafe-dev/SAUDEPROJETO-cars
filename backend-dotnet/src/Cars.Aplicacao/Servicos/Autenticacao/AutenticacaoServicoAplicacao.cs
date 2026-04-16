@@ -39,7 +39,17 @@ public sealed class AuthAppService : IAuthAppService
             ? null
             : await _userRepository.GetDetailedByIdAsync(existingUser.Id, cancellationToken);
 
-        if (user is null || !user.Ativo || !_passwordHasher.Verify(request.Password, user.SenhaHash))
+        if (user is null || !user.Ativo)
+        {
+            throw new UnauthorizedAccessException("Credenciais invalidas.");
+        }
+
+        if (!user.HasPasswordDefined())
+        {
+            throw new UnauthorizedAccessException("Usuario ainda nao definiu a senha.");
+        }
+
+        if (!_passwordHasher.Verify(request.Password, user.SenhaHash))
         {
             throw new UnauthorizedAccessException("Credenciais invalidas.");
         }
@@ -82,9 +92,9 @@ public sealed class AuthAppService : IAuthAppService
         }
 
         var targetRole = UserRoleExtensions.FromApiValue(request.Role);
-        if (actor.Role == UserRole.Manager && targetRole == UserRole.Admin)
+        if (actor.Role.HasManagerPrivileges() && targetRole == UserRole.Admin)
         {
-            throw new UnauthorizedAccessException("Gestor nao pode criar administradores.");
+            throw new UnauthorizedAccessException("Perfil de gestao nao pode criar administradores.");
         }
 
         var requestedGroupIds = request.GroupIds
@@ -93,9 +103,9 @@ public sealed class AuthAppService : IAuthAppService
             .OrderBy(x => x)
             .ToArray();
 
-        if (actor.Role == UserRole.Manager && requestedGroupIds.Any(x => !accessScope.ManagedGroupIds.Contains(x)))
+        if (actor.Role.HasManagerPrivileges() && requestedGroupIds.Any(x => !accessScope.ManagedGroupIds.Contains(x)))
         {
-            throw new UnauthorizedAccessException("Gestor so pode vincular usuarios aos grupos que gerencia.");
+            throw new UnauthorizedAccessException("Perfil de gestao so pode vincular usuarios aos grupos que gerencia.");
         }
 
         if (requestedGroupIds.Length > 0)
@@ -107,11 +117,18 @@ public sealed class AuthAppService : IAuthAppService
             }
         }
 
+        var linkedLeadership = await ResolveLinkedLeadershipAsync(targetRole, request.ChefiaId, cancellationToken);
+        var initialPassword = ResolveInitialPassword(request);
+        var initialPasswordHash = string.IsNullOrWhiteSpace(initialPassword)
+            ? string.Empty
+            : _passwordHasher.Hash(initialPassword);
+
         var user = new Cars.Domain.Entities.User(
             request.Nome,
             new Email(request.Email),
-            _passwordHasher.Hash(request.Password),
-            targetRole);
+            initialPasswordHash,
+            targetRole,
+            linkedLeadership?.Id);
 
         await _userRepository.AddAsync(user, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -126,5 +143,58 @@ public sealed class AuthAppService : IAuthAppService
             ?? throw new InvalidOperationException("Nao foi possivel carregar o usuario criado.");
 
         return createdUser.ToDto();
+    }
+
+    private static string ResolveInitialPassword(CreateUserRequestDto request)
+    {
+        if (!string.IsNullOrWhiteSpace(request.Password))
+        {
+            return request.Password.Trim();
+        }
+
+        return string.Empty;
+    }
+
+    private async Task<Cars.Domain.Entities.User?> ResolveLinkedLeadershipAsync(
+        UserRole targetRole,
+        int? chefiaId,
+        CancellationToken cancellationToken)
+    {
+        var normalizedChefiaId = chefiaId is > 0 ? chefiaId : null;
+
+        if (targetRole == UserRole.Admin)
+        {
+            if (normalizedChefiaId.HasValue)
+            {
+                throw new InvalidOperationException("Administrador nao pode ter chefia vinculada.");
+            }
+
+            return null;
+        }
+
+        if (!normalizedChefiaId.HasValue)
+        {
+            if (targetRole == UserRole.Leadership)
+            {
+                return null;
+            }
+
+            throw new InvalidOperationException("Usuarios deste perfil precisam de chefia vinculada.");
+        }
+
+        var linkedLeadership = await _userRepository.GetByIdAsync(normalizedChefiaId.Value, cancellationToken)
+            ?? throw new KeyNotFoundException("Chefia vinculada nao encontrada.");
+
+        if (!linkedLeadership.Ativo)
+        {
+            throw new InvalidOperationException("Chefia vinculada precisa estar ativa.");
+        }
+
+        if (linkedLeadership.Role != UserRole.Leadership)
+        {
+            throw new InvalidOperationException("Chefia vinculada precisa ser um usuario com perfil Chefia.");
+        }
+
+        return linkedLeadership;
     }
 }
