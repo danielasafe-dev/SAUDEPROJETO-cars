@@ -28,15 +28,30 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-700 p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover z-0"
+      >
+        <source src="/VideoLoginPageOriginal.mp4" type="video/mp4" />
+      </video>
+
+      <div className="absolute inset-0 bg-black/30 z-10"></div>
+
+      <div className="relative z-20 w-full max-w-md p-4">
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl p-8">
+
           <div className="flex flex-col items-center mb-6">
-            <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mb-3">
-              <ClipboardCheck className="w-7 h-7 text-blue-600" />
+            <div className="w-24 h-14 bg-blue-300 rounded-full flex items-center justify-center mb-3">
+              <img src="/PersonaClassic.png" alt="Persona" className="w-40 h-40" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">SPI</h1>
-            <p className="text-sm text-gray-500 mt-1">
+
+            <h1 className="font-sans text-2xl font-bold text-blue-900">NEXOS</h1>
+            <p className="text-sm text-gray-600 mt-1 text-center">
               Escala de Avaliação do Autismo na Infância
             </p>
           </div>
@@ -88,11 +103,9 @@ export default function LoginPage() {
           <p className="text-xs text-gray-400 text-center mt-4">
             Admin: admin@spi.com / admin123
           </p>
+
         </div>
       </div>
     </div>
   );
 }
-
-
-
