@@ -46,8 +46,6 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(x => x.CriadoEm)
             .HasColumnName("criado_em")
-            .HasColumnType("datetime2")
-            .HasDefaultValueSql("GETUTCDATE()")
             .IsRequired();
 
         builder.HasMany(x => x.ManagedGroups)

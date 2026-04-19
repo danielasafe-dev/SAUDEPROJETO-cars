@@ -20,7 +20,11 @@ public static class DatabaseInitializer
         var databaseInitializationOptions = scope.ServiceProvider.GetRequiredService<IOptions<DatabaseInitializationOptions>>().Value;
         var passwordHasher = scope.ServiceProvider.GetRequiredService<PasswordHasherAdapter>();
 
-        if (databaseInitializationOptions.ApplyMigrationsOnStartup)
+        if (context.Database.IsSqlite())
+        {
+            await context.Database.EnsureCreatedAsync(cancellationToken);
+        }
+        else if (databaseInitializationOptions.ApplyMigrationsOnStartup)
         {
             await context.Database.MigrateAsync(cancellationToken);
         }

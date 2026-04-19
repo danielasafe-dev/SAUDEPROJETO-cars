@@ -156,13 +156,50 @@ backend-dotnet/
 
 ## Como rodar localmente
 
-Nao executei nenhum restore nem instalacao nesta entrega. Quando voce quiser subir a API .NET, o fluxo esperado e:
+O backend suporta **SQLite** e **SQL Server**, escolhidos por configuracao em `src/Cars.API/appsettings.json`.
 
-1. ajustar a connection string em `src/Cars.API/appsettings.json`
-2. aplicar migrations
-3. iniciar o projeto `Cars.API`
+### Opcao 1: SQLite
 
-Exemplo de comandos futuros:
+Configuracao padrao:
+
+```json
+{
+  "Database": {
+    "Provider": "Sqlite"
+  },
+  "ConnectionStrings": {
+    "Sqlite": "Data Source=App_Data/cars.db"
+  }
+}
+```
+
+Comandos:
+
+```powershell
+cd backend-dotnet
+dotnet restore
+dotnet run --project .\src\Cars.API\Cars.API.csproj
+```
+
+No modo SQLite, o schema e criado automaticamente no primeiro start.
+
+### Opcao 2: SQL Server
+
+Altere a configuracao para:
+
+```json
+{
+  "Database": {
+    "Provider": "SqlServer"
+  }
+}
+```
+
+Connection string de exemplo:
+
+- `Server=localhost,1433;Database=cars_db;User Id=sa1;Password=sa@1234;TrustServerCertificate=True;MultipleActiveResultSets=True`
+
+Comandos:
 
 ```powershell
 cd backend-dotnet
@@ -170,13 +207,6 @@ dotnet restore
 dotnet ef database update --project .\src\Cars.Infraestrutura\Cars.Infraestrutura.csproj --startup-project .\src\Cars.API\Cars.API.csproj
 dotnet run --project .\src\Cars.API\Cars.API.csproj
 ```
-
-Por padrao, a API esta preparada para usar **SQL Server local** em:
-
-- `localhost,1433`
-- banco `cars_db`
-- usuario `sa1`
-- senha `sa@1234`
 
 ## Compatibilidade com o frontend atual
 

@@ -29,8 +29,6 @@ public sealed class GroupConfiguration : IEntityTypeConfiguration<Group>
 
         builder.Property(x => x.CriadoEm)
             .HasColumnName("criado_em")
-            .HasColumnType("datetime2")
-            .HasDefaultValueSql("GETUTCDATE()")
             .IsRequired();
 
         builder.HasIndex(x => x.GestorId);

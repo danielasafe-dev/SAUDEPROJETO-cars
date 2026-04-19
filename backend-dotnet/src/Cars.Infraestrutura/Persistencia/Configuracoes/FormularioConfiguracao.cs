@@ -36,14 +36,10 @@ public sealed class FormTemplateConfiguration : IEntityTypeConfiguration<FormTem
 
         builder.Property(x => x.CriadoEm)
             .HasColumnName("criado_em")
-            .HasColumnType("datetime2")
-            .HasDefaultValueSql("GETUTCDATE()")
             .IsRequired();
 
         builder.Property(x => x.AtualizadoEm)
             .HasColumnName("atualizado_em")
-            .HasColumnType("datetime2")
-            .HasDefaultValueSql("GETUTCDATE()")
             .IsRequired();
 
         builder.HasOne(x => x.Group)

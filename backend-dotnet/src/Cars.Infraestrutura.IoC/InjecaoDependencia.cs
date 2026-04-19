@@ -27,7 +27,7 @@ public static class DependencyInjection
             configuration.GetSection(Cars.Application.Configuration.PasswordInviteOptions.SectionName));
 
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+            options.UseConfiguredDatabase(configuration));
         services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<AppDbContext>());
 
         services.AddScoped<IUserRepository, UserRepository>();

@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 
 namespace Cars.Infrastructure.Data.Persistence;
 
@@ -7,9 +8,20 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
 {
     public AppDbContext CreateDbContext(string[] args)
     {
+        var apiProjectPath = Path.Combine(Directory.GetCurrentDirectory(), "src", "Cars.API");
+        var basePath = Directory.Exists(apiProjectPath)
+            ? apiProjectPath
+            : Directory.GetCurrentDirectory();
+
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(basePath)
+            .AddJsonFile("appsettings.json", optional: true)
+            .AddJsonFile("appsettings.Development.json", optional: true)
+            .AddEnvironmentVariables()
+            .Build();
+
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-        var connectionString = "Server=localhost,1433;Database=cars_db;User Id=sa1;Password=sa@1234;TrustServerCertificate=True;";
-        optionsBuilder.UseSqlServer(connectionString);
+        optionsBuilder.UseConfiguredDatabase(configuration);
         return new AppDbContext(optionsBuilder.Options);
     }
 }

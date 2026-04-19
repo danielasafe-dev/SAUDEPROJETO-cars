@@ -32,7 +32,6 @@ public sealed class EvaluationConfiguration : IEntityTypeConfiguration<Evaluatio
 
         builder.Property(x => x.Respostas)
             .HasColumnName("respostas")
-            .HasColumnType("nvarchar(max)")
             .HasConversion(
                 value => JsonSerializer.Serialize(value, JsonSerializerOptions.Default),
                 value => JsonSerializer.Deserialize<Dictionary<int, int>>(value, JsonSerializerOptions.Default) ?? new Dictionary<int, int>(),
@@ -59,8 +58,6 @@ public sealed class EvaluationConfiguration : IEntityTypeConfiguration<Evaluatio
 
         builder.Property(x => x.DataAvaliacao)
             .HasColumnName("data_avaliacao")
-            .HasColumnType("datetime2")
-            .HasDefaultValueSql("GETUTCDATE()")
             .IsRequired();
 
         builder.HasOne(x => x.Patient)

@@ -30,8 +30,6 @@ public sealed class PatientConfiguration : IEntityTypeConfiguration<Patient>
 
         builder.Property(x => x.CriadoEm)
             .HasColumnName("criado_em")
-            .HasColumnType("datetime2")
-            .HasDefaultValueSql("GETUTCDATE()")
             .IsRequired();
 
         builder.HasOne(x => x.Avaliador)
