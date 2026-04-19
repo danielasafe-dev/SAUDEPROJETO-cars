@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getEvals } from '@/domains/dashboard/api';
 import type { Evaluation } from '@/types';
 import ScoreChart from '../components/ScoreChart';
-import { CARS_QUESTIONS } from '../utils/questions';
+import { SPI_QUESTIONS } from '../utils/questions';
 import { ArrowLeft } from 'lucide-react';
 
 export default function EvaluationDetailPage() {
@@ -83,7 +83,7 @@ export default function EvaluationDetailPage() {
       <div className="bg-white rounded-xl border border-gray-200 p-4">
         <h3 className="text-sm font-semibold text-gray-700 mb-3">Detalhamento por Dimensão</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-          {CARS_QUESTIONS.map((q) => {
+          {SPI_QUESTIONS.map((q) => {
             const v = evalData.respostas[q.id] || 0;
             return (
               <div key={q.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
@@ -101,3 +101,6 @@ export default function EvaluationDetailPage() {
     </div>
   );
 }
+
+
+

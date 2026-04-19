@@ -1,6 +1,6 @@
-# Frontend CARS
+﻿# Frontend SPI
 
-Aplicacao React + Vite + TypeScript do sistema CARS.
+Aplicacao React + Vite + TypeScript do sistema SPI.
 
 ## Ambiente
 
@@ -25,3 +25,6 @@ npm run preview
 - o frontend continua ativo e nao depende mais do backend Python removido
 - a API esperada agora e a do projeto `backend-dotnet/`
 - se quiser testar sem API, ative `VITE_MOCK_MODE=true`
+
+
+

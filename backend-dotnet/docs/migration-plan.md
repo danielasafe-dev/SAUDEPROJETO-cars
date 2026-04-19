@@ -38,14 +38,14 @@ Mapeamento sugerido:
 
 | Legado | C# Domain | Observacao |
 |---|---|---|
-| `Usuario` do legado | `Cars.Dominio.Entidades.Usuario` | incluir `Email` como Value Object |
-| `Grupo` novo | `Cars.Dominio.Entidades.Grupo` | cada grupo aponta para um gestor |
-| `Vinculo usuario-grupo` novo | `Cars.Dominio.Entidades.VinculoUsuarioGrupo` | permite usuario em varios grupos |
-| `Paciente` do legado | `Cars.Dominio.Entidades.Paciente` | paciente passa a pertencer a um grupo |
-| `Formulario` novo | `Cars.Dominio.Entidades.Formulario` | possui perguntas com peso |
-| `Avaliacao` do legado | `Cars.Dominio.Entidades.Avaliacao` | pode usar CARS padrao ou formulario dinamico |
-| `calc_score` | `ServicoClassificacaoCars.CalcularPontuacao` | regra pura de dominio |
-| `classify` | `ServicoClassificacaoCars.Classificar` | regra pura de dominio |
+| `Usuario` do legado | `SPI.Dominio.Entidades.Usuario` | incluir `Email` como Value Object |
+| `Grupo` novo | `SPI.Dominio.Entidades.Grupo` | cada grupo aponta para um gestor |
+| `Vinculo usuario-grupo` novo | `SPI.Dominio.Entidades.VinculoUsuarioGrupo` | permite usuario em varios grupos |
+| `Paciente` do legado | `SPI.Dominio.Entidades.Paciente` | paciente passa a pertencer a um grupo |
+| `Formulario` novo | `SPI.Dominio.Entidades.Formulario` | possui perguntas com peso |
+| `Avaliacao` do legado | `SPI.Dominio.Entidades.Avaliacao` | pode usar SPI padrao ou formulario dinamico |
+| `calc_score` | `ServicoClassificacaoSPI.CalcularPontuacao` | regra pura de dominio |
+| `classify` | `ServicoClassificacaoSPI.Classificar` | regra pura de dominio |
 
 ### Fase 3 - Migrar casos de uso
 
@@ -150,7 +150,7 @@ Opcao recomendada:
 ### Testes recomendados
 
 - testes de contrato para cada endpoint principal
-- testes de classificacao CARS
+- testes de classificacao SPI
 - testes de autenticacao e autorizacao
 - testes de escopo por grupo e por perfil
 - testes de criacao e edicao de formularios
@@ -178,5 +178,8 @@ Opcao recomendada:
 8. `profile`
 
 Essa ordem reduz risco porque autenticacao e cadastro basico destravam o restante do sistema.
+
+
+
 
 

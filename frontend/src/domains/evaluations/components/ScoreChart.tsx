@@ -5,14 +5,14 @@ import {
   Radar,
   ResponsiveContainer,
 } from 'recharts';
-import { CARS_QUESTIONS } from '../utils/questions';
+import { SPI_QUESTIONS } from '../utils/questions';
 
 interface ScoreChartProps {
   respostas: Record<number, number>;
 }
 
 export default function ScoreChart({ respostas }: ScoreChartProps) {
-  const data = CARS_QUESTIONS.map((q) => ({
+  const data = SPI_QUESTIONS.map((q) => ({
     dimensao: q.name,
     score: respostas[q.id] || 0,
   }));
@@ -30,3 +30,6 @@ export default function ScoreChart({ respostas }: ScoreChartProps) {
     </div>
   );
 }
+
+
+

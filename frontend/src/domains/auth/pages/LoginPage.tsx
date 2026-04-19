@@ -35,7 +35,7 @@ export default function LoginPage() {
             <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mb-3">
               <ClipboardCheck className="w-7 h-7 text-blue-600" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">CARS</h1>
+            <h1 className="text-2xl font-bold text-gray-900">SPI</h1>
             <p className="text-sm text-gray-500 mt-1">
               Escala de Avaliação do Autismo na Infância
             </p>
@@ -86,10 +86,13 @@ export default function LoginPage() {
           </form>
 
           <p className="text-xs text-gray-400 text-center mt-4">
-            Admin: admin@cars.com / admin123
+            Admin: admin@spi.com / admin123
           </p>
         </div>
       </div>
     </div>
   );
 }
+
+
+

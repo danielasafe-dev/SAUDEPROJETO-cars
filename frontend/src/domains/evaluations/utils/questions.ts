@@ -1,6 +1,6 @@
 import type { Question } from '../types';
 
-export const CARS_QUESTIONS: Question[] = [
+export const SPI_QUESTIONS: Question[] = [
   {
     id: 1,
     name: 'Relacionamento interpessoal',
@@ -142,3 +142,6 @@ export const CARS_QUESTIONS: Question[] = [
     ],
   },
 ];
+
+
+

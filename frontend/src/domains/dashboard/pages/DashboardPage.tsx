@@ -50,7 +50,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold">Dashboard</h2>
-        <p className="text-sm text-gray-500">Resumo das avaliações CARS</p>
+        <p className="text-sm text-gray-500">Resumo das avaliações SPI</p>
       </div>
 
       <StatsCards total={stats.total} avgScore={stats.averageScore} lastMonth={stats.lastMonth} />
@@ -79,3 +79,6 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+
+

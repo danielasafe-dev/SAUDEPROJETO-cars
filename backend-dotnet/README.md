@@ -1,4 +1,4 @@
-﻿# CARS Backend em ASP.NET Core
+﻿# SPI Backend em ASP.NET Core
 
 Base do backend oficial em **C# / ASP.NET Core**, sucedendo o backend legado e mantendo o frontend React consumindo a mesma API.
 
@@ -6,9 +6,9 @@ Base do backend oficial em **C# / ASP.NET Core**, sucedendo o backend legado e m
 
 ```text
 backend-dotnet/
-|-- Cars.sln
+|-- SPI.sln
 |-- src/
-|   |-- Cars.API/
+|   |-- SPI.API/
 |   |   |-- Controllers/
 |   |   |   |-- Autenticacao/
 |   |   |   |-- Avaliacoes/
@@ -24,7 +24,7 @@ backend-dotnet/
 |   |   |-- Program.cs
 |   |   |-- appsettings.json
 |   |   `-- Properties/
-|   |-- Cars.Aplicacao/
+|   |-- SPI.Aplicacao/
 |   |   |-- DTOs/
 |   |   |   |-- Dashboard/
 |   |   |   |-- Formularios/
@@ -52,7 +52,7 @@ backend-dotnet/
 |   |       |-- Pacientes/
 |   |       |-- Perfil/
 |   |       `-- Usuarios/
-|   |-- Cars.Dominio/
+|   |-- SPI.Dominio/
 |   |   |-- Comum/
 |   |   |-- Entidades/
 |   |   |-- Enumeracoes/
@@ -60,13 +60,13 @@ backend-dotnet/
 |   |   |-- Repositorios/
 |   |   |-- Servicos/
 |   |   `-- ObjetosDeValor/
-|   |-- Cars.Infraestrutura/
+|   |-- SPI.Infraestrutura/
 |   |   |-- Migracoes/
 |   |   |-- Persistencia/
 |   |   |-- Repositorios/
 |   |   |-- Seguranca/
 |   |   `-- Inicializacao/
-|   `-- Cars.Infraestrutura.IoC/
+|   `-- SPI.Infraestrutura.IoC/
 |       `-- InjecaoDependencia.cs
 `-- docs/
     `-- migration-plan.md
@@ -74,27 +74,27 @@ backend-dotnet/
 
 ## Papel de cada camada
 
-### `Cars.API`
+### `SPI.API`
 
 - Controllers e rotas HTTP organizados por contexto de negocio
 - `Program.cs` com Swagger, JWT, CORS e bootstrap
 - middleware global de excecao
 
-### `Cars.Aplicacao`
+### `SPI.Aplicacao`
 
 - casos de uso
 - DTOs de entrada e saida
 - contratos de servicos
 - orquestracao entre API, dominio e repositorios
 
-### `Cars.Dominio`
+### `SPI.Dominio`
 
 - entidades centrais (`Usuario`, `Grupo`, `Paciente`, `Formulario`, `Avaliacao`)
 - value object (`Email`)
-- regras puras da escala CARS e regras de perfil/escopo
+- regras puras da escala SPI e regras de perfil/escopo
 - contratos de repositorio
 
-### `Cars.Infraestrutura`
+### `SPI.Infraestrutura`
 
 - EF Core
 - `DbContext`
@@ -103,7 +103,7 @@ backend-dotnet/
 - JWT, hash de senha e seed inicial
 - migration inicial de exemplo
 
-### `Cars.Infraestrutura.IoC`
+### `SPI.Infraestrutura.IoC`
 
 - composicao das dependencias
 - registro de services, repositories e infraestrutura
@@ -156,7 +156,7 @@ backend-dotnet/
 
 ## Como rodar localmente
 
-O backend suporta **SQLite** e **SQL Server**, escolhidos por configuracao em `src/Cars.API/appsettings.json`.
+O backend suporta **SQLite** e **SQL Server**, escolhidos por configuracao em `src/SPI.API/appsettings.json`.
 
 ### Opcao 1: SQLite
 
@@ -168,7 +168,7 @@ Configuracao padrao:
     "Provider": "Sqlite"
   },
   "ConnectionStrings": {
-    "Sqlite": "Data Source=App_Data/cars.db"
+    "Sqlite": "Data Source=App_Data/spi.db"
   }
 }
 ```
@@ -178,7 +178,7 @@ Comandos:
 ```powershell
 cd backend-dotnet
 dotnet restore
-dotnet run --project .\src\Cars.API\Cars.API.csproj
+dotnet run --project .\src\SPI.API\SPI.API.csproj
 ```
 
 No modo SQLite, o schema e criado automaticamente no primeiro start.
@@ -197,15 +197,15 @@ Altere a configuracao para:
 
 Connection string de exemplo:
 
-- `Server=localhost,1433;Database=cars_db;User Id=sa1;Password=sa@1234;TrustServerCertificate=True;MultipleActiveResultSets=True`
+- `Server=localhost,1433;Database=spi_db;User Id=sa1;Password=sa@1234;TrustServerCertificate=True;MultipleActiveResultSets=True`
 
 Comandos:
 
 ```powershell
 cd backend-dotnet
 dotnet restore
-dotnet ef database update --project .\src\Cars.Infraestrutura\Cars.Infraestrutura.csproj --startup-project .\src\Cars.API\Cars.API.csproj
-dotnet run --project .\src\Cars.API\Cars.API.csproj
+dotnet ef database update --project .\src\SPI.Infraestrutura\SPI.Infraestrutura.csproj --startup-project .\src\SPI.API\SPI.API.csproj
+dotnet run --project .\src\SPI.API\SPI.API.csproj
 ```
 
 ## Compatibilidade com o frontend atual
@@ -223,7 +223,10 @@ dotnet run --project .\src\Cars.API\Cars.API.csproj
 
 - a base legada usava SQL bruto no modulo de avaliacoes; na nova estrutura isso foi centralizado em EF Core + repositorios
 - o seed do admin agora fica controlado por configuracao (`Inicializacao`)
-- a classificacao CARS foi movida para o dominio (`ServicoClassificacaoCars`)
+- a classificacao SPI foi movida para o dominio (`ServicoClassificacaoSPI`)
 - grupos, formularios dinamicos e exportacao de avaliacao foram incorporados sem dependencias extras
 - a solucao foi organizada para permitir migracao gradual por modulo
+
+
+
 

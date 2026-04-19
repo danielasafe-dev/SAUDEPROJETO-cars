@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { KeyRound } from 'lucide-react';
 import { setPasswordFromInvite } from '../api';
@@ -58,7 +58,7 @@ export default function SetPasswordPage() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900">Definir senha</h1>
             <p className="text-sm text-gray-500 mt-1 text-center">
-              Crie sua senha de acesso ao CARS usando o convite enviado por e-mail.
+              Crie sua senha de acesso ao SPI usando o convite enviado por e-mail.
             </p>
           </div>
 
@@ -132,3 +132,6 @@ export default function SetPasswordPage() {
     </div>
   );
 }
+
+
+

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CARS_QUESTIONS } from '../utils/questions';
+import { SPI_QUESTIONS } from '../utils/questions';
 import { calcScore, getClassification } from '../utils/scoring';
 import type { EvaluationAnswers } from '../types';
 import QuestionCard from '../components/QuestionCard';
@@ -24,7 +24,7 @@ export default function EvaluationFormPage({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const total = CARS_QUESTIONS.length;
+  const total = SPI_QUESTIONS.length;
   const answered = Object.keys(answers).length;
   const progress = total > 0 ? (answered / total) * 100 : 0;
 
@@ -150,7 +150,7 @@ export default function EvaluationFormPage({
       </div>
 
       <div className="space-y-3">
-        {CARS_QUESTIONS.map((q) => (
+        {SPI_QUESTIONS.map((q) => (
           <QuestionCard
             key={q.id}
             question={q}
@@ -249,3 +249,6 @@ function ExistingPatientSelector({
     </div>
   );
 }
+
+
+

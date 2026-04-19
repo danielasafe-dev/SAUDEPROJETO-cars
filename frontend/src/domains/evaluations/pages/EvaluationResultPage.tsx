@@ -1,6 +1,6 @@
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+﻿import { useLocation, useNavigate, Link } from 'react-router-dom';
 import ScoreChart from '../components/ScoreChart';
-import { CARS_QUESTIONS } from '../utils/questions';
+import { SPI_QUESTIONS } from '../utils/questions';
 
 interface ResultState {
   score: number;
@@ -50,7 +50,7 @@ export default function EvaluationResultPage() {
       <div className="rounded-xl border border-gray-200 bg-white p-4">
         <h3 className="mb-3 text-sm font-semibold text-gray-700">Detalhamento por Dimensao</h3>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-          {CARS_QUESTIONS.map((q) => {
+          {SPI_QUESTIONS.map((q) => {
             const v = answers[q.id] || 0;
             return (
               <div key={q.id} className="flex items-center gap-2 rounded-lg bg-gray-50 p-2">
@@ -88,3 +88,6 @@ export default function EvaluationResultPage() {
     </div>
   );
 }
+
+
+

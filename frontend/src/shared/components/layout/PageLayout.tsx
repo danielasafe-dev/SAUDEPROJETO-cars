@@ -1,4 +1,4 @@
-import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
+﻿import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/shared/store/authStore';
 import {
   LayoutDashboard,
@@ -50,7 +50,7 @@ export default function PageLayout() {
         className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-gray-200 bg-white transition-transform duration-200 lg:static ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         <div className="flex items-center justify-between border-b border-gray-200 p-4">
-          <h1 className="text-lg font-bold text-blue-700">CARS</h1>
+          <h1 className="text-lg font-bold text-blue-700">SPI</h1>
           <button className="p-1 lg:hidden" onClick={() => setSidebarOpen(false)}>
             <X className="h-5 w-5" />
           </button>
@@ -94,7 +94,7 @@ export default function PageLayout() {
           <button onClick={() => setSidebarOpen(true)}>
             <Menu className="h-6 w-6" />
           </button>
-          <span className="font-semibold">CARS</span>
+          <span className="font-semibold">SPI</span>
         </header>
         <div className="p-4 lg:p-6">
           <Outlet />
@@ -103,3 +103,6 @@ export default function PageLayout() {
     </div>
   );
 }
+
+
+

@@ -1,6 +1,6 @@
-# CARS - Projeto Saude
+# SPI - Projeto Saude
 
-Sistema de apoio a aplicacao da escala **CARS (Childhood Autism Rating Scale)** com:
+Sistema de apoio a aplicacao da escala **SPI (Childhood Autism Rating Scale)** com:
 
 - frontend em **React + Vite + TypeScript**
 - novo backend em **C# / ASP.NET Core**
@@ -14,14 +14,14 @@ O backend antigo em Python foi removido do repositório. A base oficial do servi
 ```text
 SAUDEPROJETO/
 |-- backend-dotnet/
-|   |-- Cars.sln
+|   |-- SPI.sln
 |   |-- docs/
 |   `-- src/
-|       |-- Cars.Api/
-|       |-- Cars.Application/
-|       |-- Cars.Domain/
-|       |-- Cars.Infrastructure.Data/
-|       `-- Cars.Infrastructure.IoC/
+|       |-- SPI.Api/
+|       |-- SPI.Application/
+|       |-- SPI.Domain/
+|       |-- SPI.Infrastructure.Data/
+|       `-- SPI.Infrastructure.IoC/
 |-- frontend/
 |   |-- public/
 |   |-- src/
@@ -46,11 +46,11 @@ Observacao:
 
 ### `backend-dotnet/`
 
-- `Cars.Api`: presentation, controllers, middlewares, auth, Swagger e `Program.cs`
-- `Cars.Application`: casos de uso, DTOs, interfaces e orquestracao
-- `Cars.Domain`: entidades, value objects, regras de negocio e contratos
-- `Cars.Infrastructure.Data`: EF Core, `DbContext`, mappings, repositories, migrations e seed
-- `Cars.Infrastructure.IoC`: composicao das dependencias
+- `SPI.Api`: presentation, controllers, middlewares, auth, Swagger e `Program.cs`
+- `SPI.Application`: casos de uso, DTOs, interfaces e orquestracao
+- `SPI.Domain`: entidades, value objects, regras de negocio e contratos
+- `SPI.Infrastructure.Data`: EF Core, `DbContext`, mappings, repositories, migrations e seed
+- `SPI.Infrastructure.IoC`: composicao das dependencias
 
 ## Endpoints esperados pela interface
 
@@ -89,14 +89,14 @@ VITE_MOCK_MODE=false
 
 Arquivo principal:
 
-- `backend-dotnet/src/Cars.Api/appsettings.json`
+- `backend-dotnet/src/SPI.Api/appsettings.json`
 
 Connection string padrao:
 
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost,1433;Database=cars_db;User Id=sa1;Password=sa@1234;TrustServerCertificate=True;MultipleActiveResultSets=True"
+    "DefaultConnection": "Server=localhost,1433;Database=spi_db;User Id=sa1;Password=sa@1234;TrustServerCertificate=True;MultipleActiveResultSets=True"
   }
 }
 ```
@@ -121,8 +121,8 @@ Frontend em:
 ```powershell
 cd backend-dotnet
 dotnet restore
-dotnet ef database update --project .\src\Cars.Infrastructure.Data\Cars.Infrastructure.Data.csproj --startup-project .\src\Cars.Api\Cars.Api.csproj
-dotnet run --project .\src\Cars.Api\Cars.Api.csproj
+dotnet ef database update --project .\src\SPI.Infrastructure.Data\SPI.Infrastructure.Data.csproj --startup-project .\src\SPI.Api\SPI.Api.csproj
+dotnet run --project .\src\SPI.Api\SPI.Api.csproj
 ```
 
 API em desenvolvimento:
@@ -138,13 +138,13 @@ Swagger:
 
 O seed do backend .NET esta configurado para criar:
 
-- e-mail: `admin@cars.com`
+- e-mail: `admin@spi.com`
 - senha: `admin123`
 - perfil: `admin`
 
 Configuracao em:
 
-- `backend-dotnet/src/Cars.Api/appsettings.json`
+- `backend-dotnet/src/SPI.Api/appsettings.json`
 
 ## Arquivos importantes da migracao
 
@@ -159,3 +159,6 @@ Para seguir o desenvolvimento agora:
 2. usar `backend-dotnet/` como backend oficial
 3. usar `frontend/` normalmente
 4. apontar o frontend para `http://localhost:5060`
+
+
+

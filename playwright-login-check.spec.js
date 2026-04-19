@@ -1,4 +1,4 @@
-const { test } = require('playwright/test');
+﻿const { test } = require('playwright/test');
 
 test.use({
   channel: 'chrome',
@@ -39,7 +39,7 @@ test('capture login failure details', async ({ page }) => {
   });
 
   await page.goto('http://127.0.0.1:5174/login', { waitUntil: 'networkidle' });
-  await page.locator('input[type="email"]').fill('admin@cars.com');
+  await page.locator('input[type="email"]').fill('admin@spi.com');
   await page.locator('input[type="password"]').fill('admin123');
   await page.getByRole('button', { name: 'Entrar' }).click();
 
@@ -62,3 +62,6 @@ test('capture login failure details', async ({ page }) => {
 
   await page.screenshot({ path: 'playwright-login-check.png', fullPage: true });
 });
+
+
+
