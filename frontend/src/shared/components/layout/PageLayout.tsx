@@ -49,8 +49,15 @@ export default function PageLayout() {
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-gray-200 bg-white transition-transform duration-200 lg:static ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
-        <div className="flex items-center justify-between border-b border-gray-200 p-4">
-          <h1 className="text-lg font-bold text-blue-700">SPI</h1>
+        <div className="relative flex items-center gap-3 border-b border-gray-200 p-4">
+
+          <img 
+            src="/Persona.png" 
+            alt="Persona" 
+            className="w-30 h-20 -left-10 object-cover relative z-20"
+          />
+
+          <h1 className="font-sans absolute left-16 top-10 text-5xl font-bold text-blue-700 z-10">NEXOS</h1>
           <button className="p-1 lg:hidden" onClick={() => setSidebarOpen(false)}>
             <X className="h-5 w-5" />
           </button>
