@@ -1,40 +1,67 @@
 import type { Patient } from '@/types';
-import type { PatientFormValues, PatientSex, PatientUpsertInput } from '../../types';
+import type {
+  PatientFormValues,
+  PatientSearchField,
+  PatientSex,
+  PatientUpsertInput,
+} from '../../types';
 
 export const patientSexOptions: { value: PatientSex; label: string }[] = [
-  { value: 'nao_informado', label: 'Nao informado' },
   { value: 'feminino', label: 'Feminino' },
   { value: 'masculino', label: 'Masculino' },
   { value: 'outro', label: 'Outro' },
 ];
 
+export const patientSearchFieldOptions: { value: PatientSearchField; label: string }[] = [
+  { value: 'all', label: 'Todas as colunas' },
+  { value: 'nome', label: 'Nome' },
+  { value: 'cpf', label: 'CPF' },
+  { value: 'sexo', label: 'Sexo' },
+  { value: 'data_nascimento', label: 'Data de nascimento' },
+];
+
 export function buildPatientFormValues(patient?: Patient | null): PatientFormValues {
+  const sexo = patient?.sexo;
+
   return {
     nome: patient?.nome ?? '',
     cpf: patient?.cpf ?? '',
     dataNascimento: patient?.data_nascimento ?? '',
-    sexo: patient?.sexo ?? 'nao_informado',
+    sexo: sexo === 'feminino' || sexo === 'masculino' || sexo === 'outro' ? sexo : '',
+    groupId: patient?.group_id ? String(patient.group_id) : '',
     telefone: patient?.telefone ?? '',
     email: patient?.email ?? '',
     endereco: patient?.endereco ?? '',
     observacoes: patient?.observacoes ?? '',
+    documentos: patient?.documentos ?? '',
+    historico: patient?.historico ?? '',
   };
 }
 
 export function mapPatientFormToInput(values: PatientFormValues): PatientUpsertInput {
+  if (!values.sexo) {
+    throw new Error('Informe o sexo do paciente.');
+  }
+
   return {
     nome: values.nome.trim(),
     cpf: unmaskDigits(values.cpf),
     data_nascimento: values.dataNascimento,
     sexo: values.sexo,
+    groupId: values.groupId ? Number(values.groupId) : undefined,
     telefone: unmaskDigits(values.telefone),
     email: values.email.trim(),
     endereco: values.endereco.trim(),
     observacoes: values.observacoes.trim(),
+    documentos: values.documentos.trim(),
+    historico: values.historico.trim(),
   };
 }
 
-export function validatePatientForm(values: PatientFormValues): string | null {
+export function validatePatientForm(
+  values: PatientFormValues,
+  options?: { requireGroup?: boolean },
+): string | null {
   if (!values.nome.trim()) {
     return 'Informe o nome completo do paciente.';
   }
@@ -47,8 +74,23 @@ export function validatePatientForm(values: PatientFormValues): string | null {
     return 'Informe a data de nascimento.';
   }
 
+  const birthDate = new Date(values.dataNascimento);
+  if (Number.isNaN(birthDate.getTime())) {
+    return 'Informe uma data de nascimento valida.';
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (birthDate > today) {
+    return 'A data de nascimento nao pode estar no futuro.';
+  }
+
   if (!values.sexo) {
     return 'Informe o sexo do paciente.';
+  }
+
+  if (options?.requireGroup && !values.groupId) {
+    return 'Selecione o grupo do paciente.';
   }
 
   if (values.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) {
@@ -148,10 +190,38 @@ export function maskPhoneInput(value: string): string {
 }
 
 export function getPatientSearchText(patient: Patient): string {
-  return [patient.nome, patient.cpf, patient.email, patient.telefone, patient.group_nome]
+  return [
+    patient.nome,
+    patient.cpf,
+    formatCpf(patient.cpf),
+    patient.email,
+    patient.telefone,
+    formatPhone(patient.telefone),
+    formatPatientSex(patient.sexo),
+    patient.data_nascimento,
+    formatDate(patient.data_nascimento),
+    patient.group_nome,
+  ]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
+}
+
+export function matchesPatientSearch(
+  patient: Patient,
+  rawSearch: string,
+  field: PatientSearchField,
+): boolean {
+  const normalizedSearch = rawSearch.trim().toLowerCase();
+  if (!normalizedSearch) {
+    return true;
+  }
+
+  if (field === 'all') {
+    return getPatientSearchText(patient).includes(normalizedSearch);
+  }
+
+  return getPatientSearchValue(patient, field).includes(normalizedSearch);
 }
 
 export function getPatientAgeLabel(patient: Patient): string {
@@ -182,4 +252,20 @@ export function getPatientAgeLabel(patient: Patient): string {
 
 function unmaskDigits(value?: string | null): string {
   return (value ?? '').replace(/\D/g, '');
+}
+
+function getPatientSearchValue(patient: Patient, field: PatientSearchField): string {
+  switch (field) {
+    case 'nome':
+      return patient.nome.toLowerCase();
+    case 'cpf':
+      return `${patient.cpf ?? ''} ${formatCpf(patient.cpf)}`.toLowerCase();
+    case 'sexo':
+      return formatPatientSex(patient.sexo).toLowerCase();
+    case 'data_nascimento':
+      return `${patient.data_nascimento ?? ''} ${formatDate(patient.data_nascimento)}`.toLowerCase();
+    case 'all':
+    default:
+      return getPatientSearchText(patient);
+  }
 }

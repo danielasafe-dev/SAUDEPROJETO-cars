@@ -1,15 +1,20 @@
+import type { Group } from '@/domains/groups/types';
 import type { PatientFormValues } from '../../types';
 import { patientSexOptions } from '../utils/patientUtils';
 
 interface PatientFormFieldsProps {
   values: PatientFormValues;
   onChange: (field: keyof PatientFormValues, value: string) => void;
+  groups?: Group[];
+  showGroupField?: boolean;
   disabled?: boolean;
 }
 
 export default function PatientFormFields({
   values,
   onChange,
+  groups = [],
+  showGroupField = false,
   disabled = false,
 }: PatientFormFieldsProps) {
   return (
@@ -55,9 +60,11 @@ export default function PatientFormFields({
         <select
           value={values.sexo}
           onChange={(event) => onChange('sexo', event.target.value)}
+          required
           disabled={disabled}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
         >
+          <option value="">Selecione o sexo</option>
           {patientSexOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -76,6 +83,26 @@ export default function PatientFormFields({
           placeholder="(00) 00000-0000"
         />
       </div>
+
+      {showGroupField && (
+        <div className="md:col-span-2">
+          <label className="mb-1 block text-sm font-medium">Grupo</label>
+          <select
+            value={values.groupId}
+            onChange={(event) => onChange('groupId', event.target.value)}
+            required
+            disabled={disabled}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+          >
+            <option value="">Selecione o grupo</option>
+            {groups.map((group) => (
+              <option key={group.id} value={String(group.id)}>
+                {group.nome}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="md:col-span-2">
         <label className="mb-1 block text-sm font-medium">E-mail</label>
@@ -109,6 +136,30 @@ export default function PatientFormFields({
           rows={4}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
           placeholder="Informacoes complementares relevantes"
+        />
+      </div>
+
+      <div className="md:col-span-2">
+        <label className="mb-1 block text-sm font-medium">Documentos</label>
+        <textarea
+          value={values.documentos}
+          onChange={(event) => onChange('documentos', event.target.value)}
+          disabled={disabled}
+          rows={3}
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+          placeholder="Documentos do paciente, anexos entregues ou referencias externas"
+        />
+      </div>
+
+      <div className="md:col-span-2">
+        <label className="mb-1 block text-sm font-medium">Historico</label>
+        <textarea
+          value={values.historico}
+          onChange={(event) => onChange('historico', event.target.value)}
+          disabled={disabled}
+          rows={4}
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+          placeholder="Historico clinico, social ou observacoes de acompanhamento"
         />
       </div>
     </div>

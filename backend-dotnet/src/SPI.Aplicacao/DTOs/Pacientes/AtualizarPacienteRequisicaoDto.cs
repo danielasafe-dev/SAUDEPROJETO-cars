@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace SPI.Application.DTOs.Patients;
 
-public sealed class CreatePatientRequestDto
+public sealed class UpdatePatientRequestDto
 {
     [Required]
     [MaxLength(200)]

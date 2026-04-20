@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Dialog from '@/shared/components/dialog/Dialog';
+import type { Group } from '@/domains/groups/types';
 import type { PatientFormValues } from '../../types';
 import type { CreatePatientInput } from '../../api';
 import PatientFormFields from '../forms/PatientFormFields';
@@ -14,12 +15,16 @@ import {
 interface PatientCreateDialogProps {
   open: boolean;
   onClose: () => void;
+  groups?: Group[];
+  requireGroupSelection?: boolean;
   onSubmit: (data: CreatePatientInput) => Promise<void>;
 }
 
 export default function PatientCreateDialog({
   open,
   onClose,
+  groups = [],
+  requireGroupSelection = false,
   onSubmit,
 }: PatientCreateDialogProps) {
   const [values, setValues] = useState<PatientFormValues>(buildPatientFormValues());
@@ -54,7 +59,7 @@ export default function PatientCreateDialog({
     setError('');
 
     try {
-      const validationError = validatePatientForm(values);
+      const validationError = validatePatientForm(values, { requireGroup: requireGroupSelection });
       if (validationError) {
         throw new Error(validationError);
       }
@@ -98,7 +103,13 @@ export default function PatientCreateDialog({
       }
     >
       <form id="create-patient-form" onSubmit={handleSubmit} className="space-y-4">
-        <PatientFormFields values={values} onChange={handleChange} disabled={loading} />
+        <PatientFormFields
+          values={values}
+          onChange={handleChange}
+          groups={groups}
+          showGroupField={requireGroupSelection}
+          disabled={loading}
+        />
 
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">

@@ -18,11 +18,50 @@ public sealed class PatientConfiguration : IEntityTypeConfiguration<Patient>
             .HasMaxLength(200)
             .IsRequired();
 
+        builder.Property(x => x.Cpf)
+            .HasColumnName("cpf")
+            .HasMaxLength(11)
+            .IsRequired();
+
+        builder.Property(x => x.DataNascimento)
+            .HasColumnName("data_nascimento")
+            .HasColumnType("date")
+            .IsRequired();
+
+        builder.Property(x => x.Sexo)
+            .HasColumnName("sexo")
+            .HasMaxLength(20)
+            .IsRequired();
+
         builder.Property(x => x.Idade)
             .HasColumnName("idade");
 
         builder.Property(x => x.AvaliadorId)
             .HasColumnName("avaliador_id");
+
+        builder.Property(x => x.Telefone)
+            .HasColumnName("telefone")
+            .HasMaxLength(30);
+
+        builder.Property(x => x.Email)
+            .HasColumnName("email")
+            .HasMaxLength(200);
+
+        builder.Property(x => x.Endereco)
+            .HasColumnName("endereco")
+            .HasMaxLength(500);
+
+        builder.Property(x => x.Observacoes)
+            .HasColumnName("observacoes")
+            .HasMaxLength(2000);
+
+        builder.Property(x => x.Documentos)
+            .HasColumnName("documentos")
+            .HasMaxLength(4000);
+
+        builder.Property(x => x.Historico)
+            .HasColumnName("historico")
+            .HasMaxLength(4000);
 
         builder.Property(x => x.GroupId)
             .HasColumnName("group_id")
@@ -43,6 +82,7 @@ public sealed class PatientConfiguration : IEntityTypeConfiguration<Patient>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(x => x.GroupId);
+        builder.HasIndex(x => x.Cpf).IsUnique();
     }
 }
 

@@ -59,7 +59,19 @@ public sealed class PatientsAppService : IPatientsAppService
         var group = await _groupRepository.GetByIdAsync(groupId, cancellationToken)
             ?? throw new KeyNotFoundException("Grupo nao encontrado.");
 
-        var patient = new SPI.Domain.Entities.Patient(request.Nome, request.Idade, actorUserId, group.Id);
+        var patient = new SPI.Domain.Entities.Patient(
+            request.Nome,
+            request.Cpf,
+            request.DataNascimento?.Date ?? default,
+            request.Sexo,
+            request.Telefone,
+            request.Email,
+            request.Endereco,
+            request.Observacoes,
+            request.Documentos,
+            request.Historico,
+            actorUserId,
+            group.Id);
         await _patientRepository.AddAsync(patient, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -67,6 +79,46 @@ public sealed class PatientsAppService : IPatientsAppService
             ?? throw new InvalidOperationException("Nao foi possivel carregar o paciente criado.");
 
         return createdPatient.ToDto();
+    }
+
+    public async Task<PatientResponseDto> UpdateAsync(int id, UpdatePatientRequestDto request, int actorUserId, CancellationToken cancellationToken = default)
+    {
+        var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
+            ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
+
+        if (!actor.Role.CanAccessOperationalModules())
+        {
+            throw new UnauthorizedAccessException("Usuario sem permissao para editar pacientes.");
+        }
+
+        var patient = await _patientRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new KeyNotFoundException("Paciente nao encontrado.");
+
+        var accessScope = AccessScopeResolver.Resolve(actor);
+        if (actor.Role != UserRole.Admin && !accessScope.OperationalGroupIds.Contains(patient.GroupId))
+        {
+            throw new UnauthorizedAccessException("Usuario sem permissao para editar este paciente.");
+        }
+
+        var groupId = ResolveExistingOrRequestedGroupId(request.GroupId, patient.GroupId, actor.Role, accessScope);
+        var group = await _groupRepository.GetByIdAsync(groupId, cancellationToken)
+            ?? throw new KeyNotFoundException("Grupo nao encontrado.");
+
+        patient.UpdateDetails(
+            request.Nome,
+            request.Cpf,
+            request.DataNascimento?.Date ?? default,
+            request.Sexo,
+            request.Telefone,
+            request.Email,
+            request.Endereco,
+            request.Observacoes,
+            request.Documentos,
+            request.Historico,
+            group.Id);
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return patient.ToDto();
     }
 
     private static int ResolveGroupId(int? requestGroupId, UserRole actorRole, AccessScope accessScope)
@@ -92,6 +144,21 @@ public sealed class PatientsAppService : IPatientsAppService
         }
 
         throw new InvalidOperationException("O grupo do paciente deve ser informado.");
+    }
+
+    private static int ResolveExistingOrRequestedGroupId(int? requestGroupId, int currentGroupId, UserRole actorRole, AccessScope accessScope)
+    {
+        if (requestGroupId.HasValue && requestGroupId.Value > 0)
+        {
+            return ResolveGroupId(requestGroupId, actorRole, accessScope);
+        }
+
+        if (actorRole != UserRole.Admin && !accessScope.OperationalGroupIds.Contains(currentGroupId))
+        {
+            throw new UnauthorizedAccessException("Usuario sem permissao para operar neste grupo.");
+        }
+
+        return currentGroupId;
     }
 }
 

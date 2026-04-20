@@ -1,6 +1,7 @@
 import { isMockMode, api } from '@/shared/api/client';
 import { mockPatients } from '@/shared/api/mockData';
-import type { Patient } from '@/types';
+import type { Evaluation, Patient } from '@/types';
+import { getEvals } from '@/domains/dashboard/api';
 import type { PatientUpsertInput } from './types';
 
 export type CreatePatientInput = PatientUpsertInput;
@@ -30,6 +31,8 @@ export async function createPatient(data: CreatePatientInput): Promise<Patient> 
       email: data.email || null,
       endereco: data.endereco || null,
       observacoes: data.observacoes || null,
+      documentos: data.documentos || null,
+      historico: data.historico || null,
       idade: calculateAge(data.data_nascimento),
       avaliador_id: 2,
       group_id: 1,
@@ -41,7 +44,8 @@ export async function createPatient(data: CreatePatientInput): Promise<Patient> 
     return created;
   }
 
-  throw new Error('A API atual ainda nao suporta o cadastro completo de pacientes deste formulario.');
+  const response = await api.post('/api/patients', data);
+  return normalizePatient(response.data);
 }
 
 export async function updatePatient(id: number, data: UpdatePatientInput): Promise<Patient> {
@@ -61,11 +65,14 @@ export async function updatePatient(id: number, data: UpdatePatientInput): Promi
     patient.email = data.email || null;
     patient.endereco = data.endereco || null;
     patient.observacoes = data.observacoes || null;
+    patient.documentos = data.documentos || null;
+    patient.historico = data.historico || null;
     patient.idade = calculateAge(data.data_nascimento);
     return normalizePatient(patient);
   }
 
-  throw new Error('A API atual ainda nao suporta a edicao completa de pacientes deste formulario.');
+  const response = await api.put(`/api/patients/${id}`, data);
+  return normalizePatient(response.data);
 }
 
 export async function deletePatient(id: number): Promise<void> {
@@ -82,9 +89,16 @@ export async function deletePatient(id: number): Promise<void> {
   throw new Error('A API atual ainda nao suporta a exclusao de pacientes neste ambiente.');
 }
 
+export async function getPatientEvaluations(patientId: number): Promise<Evaluation[]> {
+  const evaluations = await getEvals();
+  return evaluations.filter((item) => Number(item.patientId) === patientId);
+}
+
 function normalizePatient(payload: unknown): Patient {
   const raw = payload as Record<string, unknown>;
   const birthDate = raw.data_nascimento ?? raw.dataNascimento ?? null;
+  const rawSex = asNullableString(raw.sexo ?? raw.Sexo);
+  const sexo = rawSex === 'feminino' || rawSex === 'masculino' || rawSex === 'outro' ? rawSex : null;
 
   return {
     id: Number(raw.id ?? raw.Id ?? 0),
@@ -93,11 +107,13 @@ function normalizePatient(payload: unknown): Patient {
     avaliador_id: resolveNullableNumber(raw.avaliador_id ?? raw.avaliadorId ?? raw.AvaliadorId),
     cpf: asNullableString(raw.cpf ?? raw.Cpf),
     data_nascimento: asNullableString(birthDate),
-    sexo: (asNullableString(raw.sexo ?? raw.Sexo) as Patient['sexo']) ?? 'nao_informado',
+    sexo,
     telefone: asNullableString(raw.telefone ?? raw.Telefone),
     email: asNullableString(raw.email ?? raw.Email),
     endereco: asNullableString(raw.endereco ?? raw.Endereco),
     observacoes: asNullableString(raw.observacoes ?? raw.Observacoes),
+    documentos: asNullableString(raw.documentos ?? raw.Documentos),
+    historico: asNullableString(raw.historico ?? raw.Historico),
     group_id: resolveNullableNumber(raw.group_id ?? raw.groupId ?? raw.GroupId),
     group_nome: asNullableString(raw.group_nome ?? raw.groupNome ?? raw.GroupNome),
     criado_em: String(raw.criado_em ?? raw.criadoEm ?? raw.CriadoEm ?? new Date().toISOString()),

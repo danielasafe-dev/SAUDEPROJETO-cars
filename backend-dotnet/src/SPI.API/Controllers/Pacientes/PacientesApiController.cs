@@ -31,6 +31,13 @@ public sealed class PatientsController : ControllerBase
         var result = await _patientsAppService.CreateAsync(request, User.GetUserId(), cancellationToken);
         return Ok(result);
     }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdatePatientRequestDto request, CancellationToken cancellationToken)
+    {
+        var result = await _patientsAppService.UpdateAsync(id, request, User.GetUserId(), cancellationToken);
+        return Ok(result);
+    }
 }
 
 

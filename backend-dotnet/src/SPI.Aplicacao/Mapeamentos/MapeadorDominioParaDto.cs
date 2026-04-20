@@ -37,8 +37,17 @@ public static class DomainToDtoMapper
     {
         Id = patient.Id,
         Nome = patient.Nome,
+        Cpf = patient.Cpf,
+        DataNascimento = patient.DataNascimento,
+        Sexo = patient.Sexo,
         Idade = patient.Idade,
         AvaliadorId = patient.AvaliadorId,
+        Telefone = patient.Telefone,
+        Email = patient.Email,
+        Endereco = patient.Endereco,
+        Observacoes = patient.Observacoes,
+        Documentos = patient.Documentos,
+        Historico = patient.Historico,
         GroupId = patient.GroupId,
         GroupNome = patient.Group.Nome,
         CriadoEm = patient.CriadoEm
