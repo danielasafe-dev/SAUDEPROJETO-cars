@@ -170,15 +170,45 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 .HasColumnType("int")
                 .HasColumnName("avaliador_id");
 
+            b.Property<string>("Cpf")
+                .IsRequired()
+                .HasMaxLength(11)
+                .HasColumnType("nvarchar(11)")
+                .HasColumnName("cpf");
+
             b.Property<DateTime>("CriadoEm")
                 .ValueGeneratedOnAdd()
                 .HasColumnType("datetime2")
                 .HasColumnName("criado_em")
                 .HasDefaultValueSql("GETUTCDATE()");
 
+            b.Property<DateTime>("DataNascimento")
+                .HasColumnType("date")
+                .HasColumnName("data_nascimento");
+
+            b.Property<string>("Documentos")
+                .HasMaxLength(4000)
+                .HasColumnType("nvarchar(4000)")
+                .HasColumnName("documentos");
+
+            b.Property<string>("Email")
+                .HasMaxLength(200)
+                .HasColumnType("nvarchar(200)")
+                .HasColumnName("email");
+
+            b.Property<string>("Endereco")
+                .HasMaxLength(500)
+                .HasColumnType("nvarchar(500)")
+                .HasColumnName("endereco");
+
             b.Property<int>("GroupId")
                 .HasColumnType("int")
                 .HasColumnName("group_id");
+
+            b.Property<string>("Historico")
+                .HasMaxLength(4000)
+                .HasColumnType("nvarchar(4000)")
+                .HasColumnName("historico");
 
             b.Property<int?>("Idade")
                 .HasColumnType("int")
@@ -190,8 +220,26 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 .HasColumnType("nvarchar(200)")
                 .HasColumnName("nome");
 
+            b.Property<string>("Observacoes")
+                .HasMaxLength(2000)
+                .HasColumnType("nvarchar(2000)")
+                .HasColumnName("observacoes");
+
+            b.Property<string>("Sexo")
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasColumnType("nvarchar(20)")
+                .HasColumnName("sexo");
+
+            b.Property<string>("Telefone")
+                .HasMaxLength(30)
+                .HasColumnType("nvarchar(30)")
+                .HasColumnName("telefone");
+
             b.HasKey("Id");
             b.HasIndex("AvaliadorId");
+            b.HasIndex("Cpf")
+                .IsUnique();
             b.HasIndex("GroupId");
             b.ToTable("patients", (string)null);
         });

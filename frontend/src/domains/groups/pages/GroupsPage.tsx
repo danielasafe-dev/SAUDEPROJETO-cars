@@ -36,7 +36,7 @@ export default function GroupsPage() {
   const loadData = async () => {
     const [groupsData, usersData] = await Promise.all([getGroups(), getUsers()]);
     setGroups(groupsData);
-    setManagers(usersData.filter((item) => item.role === 'gestor'));
+    setManagers(usersData.filter((item: User) => item.role === 'gestor'));
     setError('');
   };
 

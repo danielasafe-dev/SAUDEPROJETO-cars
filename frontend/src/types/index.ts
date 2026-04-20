@@ -17,11 +17,13 @@ export interface Patient {
   avaliador_id: number | null;
   cpf?: string | null;
   data_nascimento?: string | null;
-  sexo?: 'masculino' | 'feminino' | 'outro' | 'nao_informado' | null;
+  sexo?: 'masculino' | 'feminino' | 'outro' | null;
   telefone?: string | null;
   email?: string | null;
   endereco?: string | null;
   observacoes?: string | null;
+  documentos?: string | null;
+  historico?: string | null;
   group_id?: number | null;
   group_nome?: string | null;
   criado_em: string;

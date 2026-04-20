@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import type { Patient } from '@/types';
+import type { Group } from '@/domains/groups/types';
+import { getGroups } from '@/domains/groups/api';
+import { useAuthStore } from '@/shared/store/authStore';
 import {
   createPatient,
   deletePatient,
@@ -10,17 +13,22 @@ import {
   type UpdatePatientInput,
 } from '../api';
 import PatientsTable from '../components/table/PatientsTable';
+import PatientFiltersBar from '../components/filters/PatientFiltersBar';
 import PatientCreateDialog from '../components/dialogs/PatientCreateDialog';
 import PatientEditDialog from '../components/dialogs/PatientEditDialog';
 import PatientDetailsDialog from '../components/dialogs/PatientDetailsDialog';
 import PatientDeleteDialog from '../components/dialogs/PatientDeleteDialog';
-import { getPatientSearchText } from '../components/utils/patientUtils';
+import type { PatientSearchField } from '../types';
+import { matchesPatientSearch } from '../components/utils/patientUtils';
 
 export default function PatientsPage() {
+  const isAdmin = useAuthStore((state) => state.user?.role === 'admin');
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [searchField, setSearchField] = useState<PatientSearchField>('all');
   const [createOpen, setCreateOpen] = useState(false);
   const [detailsPatient, setDetailsPatient] = useState<Patient | null>(null);
   const [editPatient, setEditPatient] = useState<Patient | null>(null);
@@ -35,8 +43,12 @@ export default function PatientsPage() {
   useEffect(() => {
     const initialize = async () => {
       try {
-        const data = await getPatients();
-        setPatients(data);
+        const [patientsData, groupsData] = await Promise.all([
+          getPatients(),
+          isAdmin ? getGroups() : Promise.resolve([] as Group[]),
+        ]);
+        setPatients(patientsData);
+        setGroups(groupsData);
         setError('');
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Erro ao carregar pacientes');
@@ -46,7 +58,7 @@ export default function PatientsPage() {
     };
 
     initialize();
-  }, []);
+  }, [isAdmin]);
 
   const handleCreate = async (data: CreatePatientInput) => {
     await createPatient(data);
@@ -69,7 +81,7 @@ export default function PatientsPage() {
       return true;
     }
 
-    return getPatientSearchText(patient).includes(normalizedSearch);
+    return matchesPatientSearch(patient, normalizedSearch, searchField);
   });
 
   return (
@@ -83,16 +95,6 @@ export default function PatientsPage() {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <label className="relative block">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar por nome, CPF, telefone ou e-mail"
-              className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 sm:w-80"
-            />
-          </label>
-
           <button
             type="button"
             onClick={() => setCreateOpen(true)}
@@ -103,6 +105,13 @@ export default function PatientsPage() {
           </button>
         </div>
       </div>
+
+      <PatientFiltersBar
+        search={search}
+        searchField={searchField}
+        onSearchChange={setSearch}
+        onSearchFieldChange={setSearchField}
+      />
 
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -126,12 +135,16 @@ export default function PatientsPage() {
       <PatientCreateDialog
         open={createOpen}
         onClose={() => setCreateOpen(false)}
+        groups={groups}
+        requireGroupSelection={isAdmin}
         onSubmit={handleCreate}
       />
       <PatientEditDialog
         patient={editPatient}
         open={editPatient !== null}
         onClose={() => setEditPatient(null)}
+        groups={groups}
+        requireGroupSelection={isAdmin}
         onSubmit={handleEdit}
       />
       <PatientDetailsDialog
