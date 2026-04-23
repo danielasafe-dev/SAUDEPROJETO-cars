@@ -83,14 +83,6 @@ public sealed class PatientConfiguration : IEntityTypeConfiguration<Patient>
             .HasColumnName("observacoes")
             .HasMaxLength(2000);
 
-        builder.Property(x => x.Documentos)
-            .HasColumnName("documentos")
-            .HasMaxLength(4000);
-
-        builder.Property(x => x.Historico)
-            .HasColumnName("historico")
-            .HasMaxLength(4000);
-
         builder.Property(x => x.GroupId)
             .HasColumnName("group_id")
             .IsRequired();

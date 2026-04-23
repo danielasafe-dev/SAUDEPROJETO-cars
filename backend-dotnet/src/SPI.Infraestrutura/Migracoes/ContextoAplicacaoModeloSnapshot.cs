@@ -217,11 +217,6 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                   .HasColumnType("nvarchar(200)")
                   .HasColumnName("nome_responsavel");
 
-              b.Property<string>("Documentos")
-                  .HasMaxLength(4000)
-                  .HasColumnType("nvarchar(4000)")
-                  .HasColumnName("documentos");
-
               b.Property<string>("Email")
                   .HasMaxLength(200)
                   .HasColumnType("nvarchar(200)")
@@ -235,16 +230,6 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
               b.Property<int>("GroupId")
                   .HasColumnType("int")
                   .HasColumnName("group_id");
-
-            b.Property<string>("Historico")
-                .HasMaxLength(4000)
-                .HasColumnType("nvarchar(4000)")
-                .HasColumnName("historico");
-
-            b.Property<string>("Historico")
-                .HasMaxLength(4000)
-                .HasColumnType("nvarchar(4000)")
-                .HasColumnName("historico");
 
             b.Property<int?>("Idade")
                 .HasColumnType("int")

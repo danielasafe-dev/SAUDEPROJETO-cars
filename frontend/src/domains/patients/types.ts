@@ -23,8 +23,6 @@ export interface PatientFormValues {
   numero: string;
   complemento: string;
   observacoes: string;
-  documentos: string;
-  historico: string;
 }
 
 export interface PatientUpsertInput {
@@ -44,6 +42,4 @@ export interface PatientUpsertInput {
   numero?: string;
   complemento?: string;
   observacoes?: string;
-  documentos?: string;
-  historico?: string;
 }

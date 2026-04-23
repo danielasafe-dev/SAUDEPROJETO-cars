@@ -31,8 +31,6 @@ public sealed class Patient : Entity, IAggregateRoot
         string? numero,
         string? complemento,
         string? observacoes,
-        string? documentos,
-        string? historico,
         int? avaliadorId,
         int groupId)
     {
@@ -59,9 +57,7 @@ public sealed class Patient : Entity, IAggregateRoot
             rua,
             numero,
             complemento,
-            observacoes,
-            documentos,
-            historico);
+            observacoes);
     }
 
     public string Nome { get; private set; } = string.Empty;
@@ -81,8 +77,6 @@ public sealed class Patient : Entity, IAggregateRoot
     public string? Numero { get; private set; }
     public string? Complemento { get; private set; }
     public string? Observacoes { get; private set; }
-    public string? Documentos { get; private set; }
-    public string? Historico { get; private set; }
     public int GroupId { get; private set; }
     public DateTime CriadoEm { get; private set; }
 
@@ -108,8 +102,6 @@ public sealed class Patient : Entity, IAggregateRoot
         string? numero,
         string? complemento,
         string? observacoes,
-        string? documentos,
-        string? historico,
         int groupId)
     {
         if (groupId <= 0)
@@ -133,9 +125,7 @@ public sealed class Patient : Entity, IAggregateRoot
             rua,
             numero,
             complemento,
-            observacoes,
-            documentos,
-            historico);
+            observacoes);
     }
 
     private void ApplyDetails(
@@ -153,9 +143,7 @@ public sealed class Patient : Entity, IAggregateRoot
         string? rua,
         string? numero,
         string? complemento,
-        string? observacoes,
-        string? documentos,
-        string? historico)
+        string? observacoes)
     {
         if (string.IsNullOrWhiteSpace(nome))
         {
@@ -219,8 +207,6 @@ public sealed class Patient : Entity, IAggregateRoot
         Numero = NormalizeNullable(numero);
         Complemento = NormalizeNullable(complemento);
         Observacoes = NormalizeNullable(observacoes);
-        Documentos = NormalizeNullable(documentos);
-        Historico = NormalizeNullable(historico);
     }
 
     private static int CalculateAge(DateTime birthDate)

@@ -91,8 +91,6 @@ public static class DatabaseInitializer
             ("numero", "ALTER TABLE patients ADD COLUMN numero TEXT NULL;"),
             ("complemento", "ALTER TABLE patients ADD COLUMN complemento TEXT NULL;"),
             ("observacoes", "ALTER TABLE patients ADD COLUMN observacoes TEXT NULL;"),
-            ("documentos", "ALTER TABLE patients ADD COLUMN documentos TEXT NULL;"),
-            ("historico", "ALTER TABLE patients ADD COLUMN historico TEXT NULL;"),
         };
 
         foreach (var (columnName, sql) in alterCommands)
@@ -103,6 +101,22 @@ public static class DatabaseInitializer
             }
 
             await context.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+        }
+
+        var legacyColumnsToDrop = new[]
+        {
+            "documentos",
+            "historico"
+        };
+
+        foreach (var columnName in legacyColumnsToDrop)
+        {
+            if (!existingColumns.Contains(columnName))
+            {
+                continue;
+            }
+
+            await context.Database.ExecuteSqlRawAsync($"ALTER TABLE patients DROP COLUMN {columnName};", cancellationToken);
         }
     }
 
@@ -128,50 +142,6 @@ public static class DatabaseInitializer
         {
             context.UserGroupMemberships.Add(new UserGroupMembership(admin.Id, adminGroup.Id));
             await context.SaveChangesAsync(cancellationToken);
-        }
-    }
-
-    private static async Task EnsureSqlitePatientColumnsAsync(AppDbContext context, CancellationToken cancellationToken)
-    {
-        var existingColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var connection = context.Database.GetDbConnection();
-        if (connection.State != ConnectionState.Open)
-        {
-            await connection.OpenAsync(cancellationToken);
-        }
-
-        await using var command = connection.CreateCommand();
-        command.CommandText = "PRAGMA table_info('patients');";
-
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken))
-        {
-            existingColumns.Add(reader.GetString(1));
-        }
-
-        await reader.CloseAsync();
-
-        var alterCommands = new[]
-        {
-            ("cpf", "ALTER TABLE patients ADD COLUMN cpf TEXT NOT NULL DEFAULT '';"),
-            ("data_nascimento", "ALTER TABLE patients ADD COLUMN data_nascimento TEXT NOT NULL DEFAULT '2000-01-01';"),
-            ("sexo", "ALTER TABLE patients ADD COLUMN sexo TEXT NOT NULL DEFAULT 'outro';"),
-            ("telefone", "ALTER TABLE patients ADD COLUMN telefone TEXT NULL;"),
-            ("email", "ALTER TABLE patients ADD COLUMN email TEXT NULL;"),
-            ("endereco", "ALTER TABLE patients ADD COLUMN endereco TEXT NULL;"),
-            ("observacoes", "ALTER TABLE patients ADD COLUMN observacoes TEXT NULL;"),
-            ("documentos", "ALTER TABLE patients ADD COLUMN documentos TEXT NULL;"),
-            ("historico", "ALTER TABLE patients ADD COLUMN historico TEXT NULL;"),
-        };
-
-        foreach (var (columnName, sql) in alterCommands)
-        {
-            if (existingColumns.Contains(columnName))
-            {
-                continue;
-            }
-
-            await context.Database.ExecuteSqlRawAsync(sql, cancellationToken);
         }
     }
 }

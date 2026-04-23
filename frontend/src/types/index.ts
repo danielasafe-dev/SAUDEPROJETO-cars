@@ -31,8 +31,6 @@ export interface Patient {
   numero?: string | null;
   complemento?: string | null;
   observacoes?: string | null;
-  documentos?: string | null;
-  historico?: string | null;
   group_id?: number | null;
   group_nome?: string | null;
   criado_em: string;

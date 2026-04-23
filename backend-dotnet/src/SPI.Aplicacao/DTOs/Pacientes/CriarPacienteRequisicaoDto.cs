@@ -58,11 +58,5 @@ public sealed class CreatePatientRequestDto
     [MaxLength(2000)]
     public string? Observacoes { get; init; }
 
-    [MaxLength(4000)]
-    public string? Documentos { get; init; }
-
-    [MaxLength(4000)]
-    public string? Historico { get; init; }
-
     public int? GroupId { get; init; }
 }

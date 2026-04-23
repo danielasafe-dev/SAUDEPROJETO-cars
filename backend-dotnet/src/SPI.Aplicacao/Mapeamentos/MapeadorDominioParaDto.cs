@@ -55,8 +55,6 @@ public static class DomainToDtoMapper
         Numero = patient.Numero,
         Complemento = patient.Complemento,
         Observacoes = patient.Observacoes,
-        Documentos = patient.Documentos,
-        Historico = patient.Historico,
         GroupId = patient.GroupId,
         GroupNome = patient.Group.Nome,
         CriadoEm = patient.CriadoEm

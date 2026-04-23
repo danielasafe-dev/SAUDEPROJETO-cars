@@ -47,8 +47,6 @@ export async function createPatient(data: CreatePatientInput): Promise<Patient> 
       numero: data.numero || null,
       complemento: data.complemento || null,
       observacoes: data.observacoes || null,
-      documentos: data.documentos || null,
-      historico: data.historico || null,
       idade: calculateAge(data.data_nascimento),
       avaliador_id: 2,
       group_id: 1,
@@ -88,8 +86,6 @@ export async function updatePatient(id: number, data: UpdatePatientInput): Promi
     patient.numero = data.numero || null;
     patient.complemento = data.complemento || null;
     patient.observacoes = data.observacoes || null;
-    patient.documentos = data.documentos || null;
-    patient.historico = data.historico || null;
     patient.idade = calculateAge(data.data_nascimento);
     return normalizePatient(patient);
   }
@@ -182,8 +178,6 @@ function normalizePatient(payload: unknown): Patient {
     numero: asNullableString(raw.numero ?? raw.Numero),
     complemento: asNullableString(raw.complemento ?? raw.Complemento),
     observacoes: asNullableString(raw.observacoes ?? raw.Observacoes),
-    documentos: asNullableString(raw.documentos ?? raw.Documentos),
-    historico: asNullableString(raw.historico ?? raw.Historico),
     group_id: resolveNullableNumber(raw.group_id ?? raw.groupId ?? raw.GroupId),
     group_nome: asNullableString(raw.group_nome ?? raw.groupNome ?? raw.GroupNome),
     criado_em: String(raw.criado_em ?? raw.criadoEm ?? raw.CriadoEm ?? new Date().toISOString()),

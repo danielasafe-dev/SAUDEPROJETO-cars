@@ -80,8 +80,6 @@ public sealed class PatientsAppService : IPatientsAppService
             request.Numero,
             request.Complemento,
             request.Observacoes,
-            request.Documentos,
-            request.Historico,
             actorUserId,
             group.Id);
         await _patientRepository.AddAsync(patient, cancellationToken);
@@ -132,8 +130,6 @@ public sealed class PatientsAppService : IPatientsAppService
             request.Numero,
             request.Complemento,
             request.Observacoes,
-            request.Documentos,
-            request.Historico,
             group.Id);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);

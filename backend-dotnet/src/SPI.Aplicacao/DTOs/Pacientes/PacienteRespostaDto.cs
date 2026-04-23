@@ -45,8 +45,6 @@ public sealed class PatientResponseDto
     public string? Complemento { get; init; }
 
     public string? Observacoes { get; init; }
-    public string? Documentos { get; init; }
-    public string? Historico { get; init; }
 
     [JsonPropertyName("group_id")]
     public int GroupId { get; init; }
