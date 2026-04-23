@@ -47,6 +47,8 @@ export async function createPatient(data: CreatePatientInput): Promise<Patient> 
       numero: data.numero || null,
       complemento: data.complemento || null,
       observacoes: data.observacoes || null,
+      documentos: data.documentos || null,
+      historico: data.historico || null,
       idade: calculateAge(data.data_nascimento),
       avaliador_id: 2,
       group_id: 1,
@@ -86,6 +88,8 @@ export async function updatePatient(id: number, data: UpdatePatientInput): Promi
     patient.numero = data.numero || null;
     patient.complemento = data.complemento || null;
     patient.observacoes = data.observacoes || null;
+    patient.documentos = data.documentos || null;
+    patient.historico = data.historico || null;
     patient.idade = calculateAge(data.data_nascimento);
     return normalizePatient(patient);
   }

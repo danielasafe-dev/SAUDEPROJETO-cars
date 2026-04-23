@@ -70,6 +70,8 @@ export function buildPatientFormValues(patient?: Patient | null): PatientFormVal
     numero: patient?.numero ?? '',
     complemento: patient?.complemento ?? '',
     observacoes: patient?.observacoes ?? '',
+    documentos: patient?.documentos ?? '',
+    historico: patient?.historico ?? '',
   };
 }
 

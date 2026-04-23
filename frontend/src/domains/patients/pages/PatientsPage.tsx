@@ -56,7 +56,7 @@ export default function PatientsPage() {
     };
 
     initialize();
-  }, []);
+  }, [isAdmin]);
 
   const handleCreate = async (data: CreatePatientInput) => {
     await createPatient(data);

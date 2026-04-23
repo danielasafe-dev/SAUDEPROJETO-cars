@@ -196,6 +196,12 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                   .HasColumnType("nvarchar(11)")
                   .HasColumnName("cpf");
 
+            b.Property<string>("Cpf")
+                .IsRequired()
+                .HasMaxLength(11)
+                .HasColumnType("nvarchar(11)")
+                .HasColumnName("cpf");
+
             b.Property<DateTime>("CriadoEm")
                 .ValueGeneratedOnAdd()
                 .HasColumnType("datetime2")
@@ -229,6 +235,11 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
               b.Property<int>("GroupId")
                   .HasColumnType("int")
                   .HasColumnName("group_id");
+
+            b.Property<string>("Historico")
+                .HasMaxLength(4000)
+                .HasColumnType("nvarchar(4000)")
+                .HasColumnName("historico");
 
             b.Property<string>("Historico")
                 .HasMaxLength(4000)
