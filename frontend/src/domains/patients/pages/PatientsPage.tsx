@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Eye, Pencil, Plus, Trash2 } from 'lucide-react';
 import type { Patient } from '@/types';
 import type { Group } from '@/domains/groups/types';
 import { getGroups } from '@/domains/groups/api';
@@ -12,14 +12,14 @@ import {
   type CreatePatientInput,
   type UpdatePatientInput,
 } from '../api';
-import PatientsTable from '../components/table/PatientsTable';
 import PatientFiltersBar from '../components/filters/PatientFiltersBar';
 import PatientCreateDialog from '../components/dialogs/PatientCreateDialog';
 import PatientEditDialog from '../components/dialogs/PatientEditDialog';
 import PatientDetailsDialog from '../components/dialogs/PatientDetailsDialog';
 import PatientDeleteDialog from '../components/dialogs/PatientDeleteDialog';
 import type { PatientSearchField } from '../types';
-import { matchesPatientSearch } from '../components/utils/patientUtils';
+import { formatCpf, formatDate, formatPatientSex, formatPhone, getPatientAgeLabel, matchesPatientSearch } from '../components/utils/patientUtils';
+import DataTable, { type Column } from '@/shared/components/table/DataTable';
 
 export default function PatientsPage() {
   const isAdmin = useAuthStore((state) => state.user?.role === 'admin');
@@ -77,12 +77,77 @@ export default function PatientsPage() {
 
   const normalizedSearch = search.trim().toLowerCase();
   const filteredPatients = patients.filter((patient) => {
-    if (!normalizedSearch) {
-      return true;
-    }
-
+    if (!normalizedSearch) return true;
     return matchesPatientSearch(patient, normalizedSearch, searchField);
   });
+
+  const columns: Column<Patient>[] = [
+    {
+      header: 'Acoes',
+      render: (p) => (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setDetailsPatient(p)}
+            className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            Visualizar
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditPatient(p)}
+            className="inline-flex items-center gap-1 rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-50"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Editar
+          </button>
+          <button
+            type="button"
+            onClick={() => setDeletePatientTarget(p)}
+            className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Excluir
+          </button>
+        </div>
+      ),
+    },
+    {
+      header: 'Paciente',
+      render: (p) => (
+        <>
+          <div className="font-medium text-gray-900">{p.nome}</div>
+          <div className="text-xs text-gray-500">{getPatientAgeLabel(p)}</div>
+        </>
+      ),
+    },
+    {
+      header: 'CPF',
+      render: (p) => <span className="text-gray-600">{formatCpf(p.cpf)}</span>,
+    },
+    {
+      header: 'Nascimento',
+      render: (p) => <span className="text-gray-600">{formatDate(p.data_nascimento)}</span>,
+    },
+    {
+      header: 'Sexo',
+      render: (p) => <span className="text-gray-600">{formatPatientSex(p.sexo)}</span>,
+    },
+    {
+      header: 'Contato',
+      render: (p) => (
+        <>
+          <div className="text-gray-600">{formatPhone(p.telefone)}</div>
+          <div className="text-xs text-gray-500">{p.email || 'Sem e-mail'}</div>
+        </>
+      ),
+    },
+    {
+      header: 'Cadastro',
+      render: (p) => <span className="text-gray-500">{formatDate(p.criado_em)}</span>,
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -124,11 +189,12 @@ export default function PatientsPage() {
           Carregando pacientes...
         </div>
       ) : (
-        <PatientsTable
-          patients={filteredPatients}
-          onView={setDetailsPatient}
-          onEdit={setEditPatient}
-          onDelete={setDeletePatientTarget}
+        <DataTable
+          data={filteredPatients}
+          columns={columns}
+          keyExtractor={(p) => p.id}
+          emptyMessage="Nenhum paciente encontrado com os filtros atuais."
+          rowClassName="align-top"
         />
       )}
 

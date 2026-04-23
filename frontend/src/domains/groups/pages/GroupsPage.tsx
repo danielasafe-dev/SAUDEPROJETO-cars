@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { User } from '@/types';
 import { getUsers } from '@/domains/users/api';
@@ -12,12 +12,12 @@ import {
   type UpdateGroupInput,
 } from '../api';
 import type { Group } from '../types';
-import GroupsTable from '../components/table/GroupsTable';
 import GroupCreateDialog from '../components/dialogs/GroupCreateDialog';
 import GroupEditDialog from '../components/dialogs/GroupEditDialog';
 import GroupDetailsDialog from '../components/dialogs/GroupDetailsDialog';
 import GroupDeleteDialog from '../components/dialogs/GroupDeleteDialog';
-import { getGroupSearchText } from '../components/utils/groupUtils';
+import { formatGroupDate, getGroupSearchText, getGroupStatusBadgeClass, getGroupStatusLabel } from '../components/utils/groupUtils';
+import DataTable, { type Column } from '@/shared/components/table/DataTable';
 
 export default function GroupsPage() {
   const user = useAuthStore((state) => state.user);
@@ -78,12 +78,67 @@ export default function GroupsPage() {
 
   const normalizedSearch = search.trim().toLowerCase();
   const filteredGroups = groups.filter((group) => {
-    if (!normalizedSearch) {
-      return true;
-    }
-
+    if (!normalizedSearch) return true;
     return getGroupSearchText(group).includes(normalizedSearch);
   });
+
+  const columns: Column<Group>[] = [
+    {
+      header: 'Acoes',
+      render: (g) => (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setDetailsGroup(g)}
+            className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            Visualizar
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditGroup(g)}
+            className="inline-flex items-center gap-1 rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-50"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Editar
+          </button>
+          <button
+            type="button"
+            onClick={() => setDeleteGroupTarget(g)}
+            className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Excluir
+          </button>
+        </div>
+      ),
+    },
+    {
+      header: 'Grupo',
+      render: (g) => <span className="font-medium text-gray-900">{g.nome}</span>,
+    },
+    {
+      header: 'Gestor',
+      render: (g) => <span className="text-gray-600">{g.gestor_nome || 'Nao informado'}</span>,
+    },
+    {
+      header: 'Membros',
+      render: (g) => <span className="text-gray-600">{g.quantidade_membros}</span>,
+    },
+    {
+      header: 'Status',
+      render: (g) => (
+        <span className={`rounded-full px-2 py-1 text-xs font-bold ${getGroupStatusBadgeClass(g.ativo)}`}>
+          {getGroupStatusLabel(g.ativo)}
+        </span>
+      ),
+    },
+    {
+      header: 'Cadastro',
+      render: (g) => <span className="text-gray-500">{formatGroupDate(g.criado_em)}</span>,
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -128,11 +183,11 @@ export default function GroupsPage() {
           Carregando grupos...
         </div>
       ) : (
-        <GroupsTable
-          groups={filteredGroups}
-          onView={setDetailsGroup}
-          onEdit={setEditGroup}
-          onDelete={setDeleteGroupTarget}
+        <DataTable
+          data={filteredGroups}
+          columns={columns}
+          keyExtractor={(g) => g.id}
+          emptyMessage="Nenhum grupo encontrado com os filtros atuais."
         />
       )}
 
