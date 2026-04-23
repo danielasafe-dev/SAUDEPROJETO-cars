@@ -39,6 +39,10 @@ public sealed class PatientConfiguration : IEntityTypeConfiguration<Patient>
         builder.Property(x => x.AvaliadorId)
             .HasColumnName("avaliador_id");
 
+        builder.Property(x => x.NomeResponsavel)
+            .HasColumnName("nome_responsavel")
+            .HasMaxLength(200);
+
         builder.Property(x => x.Telefone)
             .HasColumnName("telefone")
             .HasMaxLength(30);
@@ -47,9 +51,33 @@ public sealed class PatientConfiguration : IEntityTypeConfiguration<Patient>
             .HasColumnName("email")
             .HasMaxLength(200);
 
-        builder.Property(x => x.Endereco)
-            .HasColumnName("endereco")
-            .HasMaxLength(500);
+        builder.Property(x => x.Cep)
+            .HasColumnName("cep")
+            .HasMaxLength(8);
+
+        builder.Property(x => x.Estado)
+            .HasColumnName("estado")
+            .HasMaxLength(2);
+
+        builder.Property(x => x.Cidade)
+            .HasColumnName("cidade")
+            .HasMaxLength(120);
+
+        builder.Property(x => x.Bairro)
+            .HasColumnName("bairro")
+            .HasMaxLength(120);
+
+        builder.Property(x => x.Rua)
+            .HasColumnName("rua")
+            .HasMaxLength(200);
+
+        builder.Property(x => x.Numero)
+            .HasColumnName("numero")
+            .HasMaxLength(30);
+
+        builder.Property(x => x.Complemento)
+            .HasColumnName("complemento")
+            .HasMaxLength(200);
 
         builder.Property(x => x.Observacoes)
             .HasColumnName("observacoes")

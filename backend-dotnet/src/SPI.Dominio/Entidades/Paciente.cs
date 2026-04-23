@@ -4,6 +4,13 @@ namespace SPI.Domain.Entities;
 
 public sealed class Patient : Entity, IAggregateRoot
 {
+    private static readonly HashSet<string> EstadosBrasileirosValidos =
+    [
+        "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
+        "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN",
+        "RS", "RO", "RR", "SC", "SP", "SE", "TO"
+    ];
+
     private Patient()
     {
     }
@@ -15,7 +22,14 @@ public sealed class Patient : Entity, IAggregateRoot
         string sexo,
         string? telefone,
         string? email,
-        string? endereco,
+        string? nomeResponsavel,
+        string? cep,
+        string? estado,
+        string? cidade,
+        string? bairro,
+        string? rua,
+        string? numero,
+        string? complemento,
         string? observacoes,
         string? documentos,
         string? historico,
@@ -30,7 +44,24 @@ public sealed class Patient : Entity, IAggregateRoot
         AvaliadorId = avaliadorId;
         GroupId = groupId;
         CriadoEm = DateTime.UtcNow;
-        ApplyDetails(nome, cpf, dataNascimento, sexo, telefone, email, endereco, observacoes, documentos, historico);
+        ApplyDetails(
+            nome,
+            cpf,
+            dataNascimento,
+            sexo,
+            telefone,
+            email,
+            nomeResponsavel,
+            cep,
+            estado,
+            cidade,
+            bairro,
+            rua,
+            numero,
+            complemento,
+            observacoes,
+            documentos,
+            historico);
     }
 
     public string Nome { get; private set; } = string.Empty;
@@ -39,9 +70,16 @@ public sealed class Patient : Entity, IAggregateRoot
     public string Sexo { get; private set; } = string.Empty;
     public int? Idade { get; private set; }
     public int? AvaliadorId { get; private set; }
+    public string? NomeResponsavel { get; private set; }
     public string? Telefone { get; private set; }
     public string? Email { get; private set; }
-    public string? Endereco { get; private set; }
+    public string? Cep { get; private set; }
+    public string? Estado { get; private set; }
+    public string? Cidade { get; private set; }
+    public string? Bairro { get; private set; }
+    public string? Rua { get; private set; }
+    public string? Numero { get; private set; }
+    public string? Complemento { get; private set; }
     public string? Observacoes { get; private set; }
     public string? Documentos { get; private set; }
     public string? Historico { get; private set; }
@@ -61,7 +99,14 @@ public sealed class Patient : Entity, IAggregateRoot
         string sexo,
         string? telefone,
         string? email,
-        string? endereco,
+        string? nomeResponsavel,
+        string? cep,
+        string? estado,
+        string? cidade,
+        string? bairro,
+        string? rua,
+        string? numero,
+        string? complemento,
         string? observacoes,
         string? documentos,
         string? historico,
@@ -73,7 +118,24 @@ public sealed class Patient : Entity, IAggregateRoot
         }
 
         GroupId = groupId;
-        ApplyDetails(nome, cpf, dataNascimento, sexo, telefone, email, endereco, observacoes, documentos, historico);
+        ApplyDetails(
+            nome,
+            cpf,
+            dataNascimento,
+            sexo,
+            telefone,
+            email,
+            nomeResponsavel,
+            cep,
+            estado,
+            cidade,
+            bairro,
+            rua,
+            numero,
+            complemento,
+            observacoes,
+            documentos,
+            historico);
     }
 
     private void ApplyDetails(
@@ -83,7 +145,14 @@ public sealed class Patient : Entity, IAggregateRoot
         string sexo,
         string? telefone,
         string? email,
-        string? endereco,
+        string? nomeResponsavel,
+        string? cep,
+        string? estado,
+        string? cidade,
+        string? bairro,
+        string? rua,
+        string? numero,
+        string? complemento,
         string? observacoes,
         string? documentos,
         string? historico)
@@ -122,14 +191,33 @@ public sealed class Patient : Entity, IAggregateRoot
             throw new InvalidOperationException("Email do paciente e invalido.");
         }
 
+        var normalizedCep = NormalizeDigitsOrNull(cep);
+        if (normalizedCep is not null && normalizedCep.Length != 8)
+        {
+            throw new InvalidOperationException("CEP do paciente deve conter 8 digitos.");
+        }
+
+        var normalizedState = NormalizeNullable(estado)?.ToUpperInvariant();
+        if (normalizedState is not null && !EstadosBrasileirosValidos.Contains(normalizedState))
+        {
+            throw new InvalidOperationException("Estado do paciente e invalido.");
+        }
+
         Nome = nome.Trim();
         Cpf = normalizedCpf;
         DataNascimento = normalizedBirthDate;
         Sexo = normalizedSex;
         Idade = CalculateAge(normalizedBirthDate);
+        NomeResponsavel = NormalizeNullable(nomeResponsavel);
         Telefone = NormalizeDigitsOrNull(telefone);
         Email = normalizedEmail;
-        Endereco = NormalizeNullable(endereco);
+        Cep = normalizedCep;
+        Estado = normalizedState;
+        Cidade = NormalizeNullable(cidade);
+        Bairro = NormalizeNullable(bairro);
+        Rua = NormalizeNullable(rua);
+        Numero = NormalizeNullable(numero);
+        Complemento = NormalizeNullable(complemento);
         Observacoes = NormalizeNullable(observacoes);
         Documentos = NormalizeNullable(documentos);
         Historico = NormalizeNullable(historico);

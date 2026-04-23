@@ -3,10 +3,11 @@ import Dialog from '@/shared/components/dialog/Dialog';
 import type { Group } from '@/domains/groups/types';
 import type { Patient } from '@/types';
 import type { PatientFormValues } from '../../types';
-import type { UpdatePatientInput } from '../../api';
+import { lookupAddressByCep, type UpdatePatientInput } from '../../api';
 import PatientFormFields from '../forms/PatientFormFields';
 import {
   buildPatientFormValues,
+  maskCepInput,
   mapPatientFormToInput,
   maskCpfInput,
   maskPhoneInput,
@@ -33,12 +34,18 @@ export default function PatientEditDialog({
   const [values, setValues] = useState<PatientFormValues>(buildPatientFormValues(patient));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [cepLookupLoading, setCepLookupLoading] = useState(false);
+  const [cepLookupMessage, setCepLookupMessage] = useState('');
+  const [cepLookupTone, setCepLookupTone] = useState<'neutral' | 'success' | 'error'>('neutral');
 
   useEffect(() => {
     if (open) {
       setValues(buildPatientFormValues(patient));
       setLoading(false);
       setError('');
+      setCepLookupLoading(false);
+      setCepLookupMessage('');
+      setCepLookupTone('neutral');
     }
   }, [open, patient]);
 
@@ -53,7 +60,45 @@ export default function PatientEditDialog({
       return;
     }
 
+    if (field === 'cep') {
+      setCepLookupMessage('');
+      setCepLookupTone('neutral');
+      setValues((current) => ({ ...current, cep: maskCepInput(value) }));
+      return;
+    }
+
     setValues((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleCepBlur = async () => {
+    const cep = values.cep.replace(/\D/g, '');
+    if (cep.length !== 8) {
+      return;
+    }
+
+    setCepLookupLoading(true);
+    setCepLookupMessage('');
+    setCepLookupTone('neutral');
+
+    try {
+      const address = await lookupAddressByCep(cep);
+      setValues((current) => ({
+        ...current,
+        cep: maskCepInput(address.cep || current.cep),
+        estado: address.estado || current.estado,
+        cidade: address.cidade || current.cidade,
+        bairro: address.bairro || current.bairro,
+        rua: address.rua || current.rua,
+        complemento: current.complemento || address.complemento || '',
+      }));
+      setCepLookupMessage('Endereco preenchido automaticamente pelo CEP.');
+      setCepLookupTone('success');
+    } catch (err: unknown) {
+      setCepLookupMessage(err instanceof Error ? err.message : 'Nao foi possivel consultar o CEP.');
+      setCepLookupTone('error');
+    } finally {
+      setCepLookupLoading(false);
+    }
   };
 
   const handleSubmit = async (event: { preventDefault: () => void }) => {
@@ -87,7 +132,7 @@ export default function PatientEditDialog({
       onClose={onClose}
       title="Editar paciente"
       description="Atualize os dados cadastrais do paciente selecionado."
-      size="lg"
+      size="xl"
       closeDisabled={loading}
       footer={
         <>
@@ -114,9 +159,13 @@ export default function PatientEditDialog({
         <PatientFormFields
           values={values}
           onChange={handleChange}
+          onCepBlur={handleCepBlur}
           groups={groups}
           showGroupField={requireGroupSelection}
           disabled={loading}
+          cepLookupLoading={cepLookupLoading}
+          cepLookupMessage={cepLookupMessage}
+          cepLookupTone={cepLookupTone}
         />
 
         {error && (

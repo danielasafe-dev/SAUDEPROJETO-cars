@@ -3,8 +3,11 @@ import { ClipboardList } from 'lucide-react';
 import Dialog from '@/shared/components/dialog/Dialog';
 import type { Patient } from '@/types';
 import {
+  formatBrazilianState,
+  formatCep,
   formatCpf,
   formatDate,
+  formatPatientAddress,
   formatPatientSex,
   formatPhone,
   getPatientAgeLabel,
@@ -64,7 +67,7 @@ export default function PatientDetailsDialog({
         isOpen={open}
         onClose={handleClose}
         title="Detalhes do paciente"
-        description="Confira os dados principais, documentos e historico do paciente."
+        description="Confira os dados principais e informacoes de acompanhamento do paciente."
         size="lg"
         footer={
           <>
@@ -99,9 +102,9 @@ export default function PatientDetailsDialog({
                 <InfoRow label="Data de nascimento" value={formatDate(patient.data_nascimento)} />
                 <InfoRow label="Idade" value={getPatientAgeLabel(patient)} />
                 <InfoRow label="Sexo" value={formatPatientSex(patient.sexo)} />
+                <InfoRow label="Responsavel" value={patient.nome_responsavel || 'Nao informado'} />
                 <InfoRow label="Telefone" value={formatPhone(patient.telefone)} />
                 <InfoRow label="E-mail" value={patient.email || 'Nao informado'} />
-                <InfoRow label="Endereco" value={patient.endereco || 'Nao informado'} />
                 <InfoRow label="Grupo" value={patient.group_nome || 'Nao informado'} />
                 <InfoRow label="Cadastro" value={formatDate(patient.criado_em)} />
                 <InfoRow label="Observacoes" value={patient.observacoes || 'Nao informado'} />
@@ -110,20 +113,22 @@ export default function PatientDetailsDialog({
             </InfoSection>
 
             <InfoSection
-              title="Documentos"
-              description="Registros documentais ou referencias associadas ao paciente."
+              title="Endereco"
+              description="Dados de localizacao informados para contato e acompanhamento."
             >
-              <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800">
-                {patient.documentos || 'Nenhum documento informado.'}
-              </div>
-            </InfoSection>
-
-            <InfoSection
-              title="Historico"
-              description="Anotacoes clinicas e observacoes relevantes para acompanhamento."
-            >
-              <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800">
-                {patient.historico || 'Nenhum historico informado.'}
+              <div className="grid gap-4 md:grid-cols-2">
+                <InfoRow label="CEP" value={formatCep(patient.cep)} />
+                <InfoRow label="Estado" value={formatBrazilianState(patient.estado)} />
+                <InfoRow label="Cidade" value={patient.cidade || 'Nao informado'} />
+                <InfoRow label="Bairro" value={patient.bairro || 'Nao informado'} />
+                <InfoRow label="Rua" value={patient.rua || 'Nao informado'} />
+                <InfoRow label="Numero" value={patient.numero || 'Nao informado'} />
+                <div className="md:col-span-2">
+                  <InfoRow label="Complemento" value={patient.complemento || 'Nao informado'} />
+                </div>
+                <div className="md:col-span-2">
+                  <InfoRow label="Endereco completo" value={formatPatientAddress(patient)} />
+                </div>
               </div>
             </InfoSection>
           </div>

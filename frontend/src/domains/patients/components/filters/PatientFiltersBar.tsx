@@ -1,4 +1,4 @@
-import { Search } from 'lucide-react';
+import SearchFiltersPanel from '@/shared/components/filters/SearchFiltersPanel';
 import type { PatientSearchField } from '../../types';
 import { patientSearchFieldOptions } from '../utils/patientUtils';
 
@@ -7,6 +7,7 @@ interface PatientFiltersBarProps {
   searchField: PatientSearchField;
   onSearchChange: (value: string) => void;
   onSearchFieldChange: (value: PatientSearchField) => void;
+  onClear: () => void;
 }
 
 export default function PatientFiltersBar({
@@ -14,38 +15,32 @@ export default function PatientFiltersBar({
   searchField,
   onSearchChange,
   onSearchFieldChange,
+  onClear,
 }: PatientFiltersBarProps) {
-  const selectedFieldLabel =
-    patientSearchFieldOptions.find((option) => option.value === searchField)?.label ??
-    'Todas as colunas';
+  const searchPlaceholderByField: Record<PatientSearchField, string> = {
+    all: 'Buscar por nome, CPF, sexo ou data de nascimento',
+    nome: 'Buscar paciente pelo nome',
+    cpf: 'Buscar paciente pelo CPF',
+    sexo: 'Buscar paciente pelo sexo',
+    data_nascimento: 'Buscar paciente pela data de nascimento',
+  };
+
+  const hasActiveFilters = search.trim().length > 0 || searchField !== 'all';
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:flex-row sm:items-end">
-      <div className="sm:min-w-52">
-        <label className="mb-1 block text-sm font-medium text-gray-700">Filtrar por</label>
-        <select
-          value={searchField}
-          onChange={(event) => onSearchFieldChange(event.target.value as PatientSearchField)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          {patientSearchFieldOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <label className="relative block flex-1">
-        <span className="mb-1 block text-sm font-medium text-gray-700">Busca</span>
-        <Search className="pointer-events-none absolute left-3 top-[38px] h-4 w-4 -translate-y-1/2 text-gray-400" />
-        <input
-          value={search}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder={`Buscar em ${selectedFieldLabel.toLowerCase()}`}
-          className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </label>
-    </div>
+    <SearchFiltersPanel
+      title="Encontre pacientes com mais rapidez"
+      description="Use a busca principal para localizar por nome, CPF ou outros dados e refine se precisar."
+      searchLabel="Buscar paciente"
+      searchValue={search}
+      searchPlaceholder={searchPlaceholderByField[searchField]}
+      onSearchChange={onSearchChange}
+      filterLabel="Refinar por campo"
+      filterValue={searchField}
+      filterOptions={patientSearchFieldOptions}
+      onFilterChange={(value) => onSearchFieldChange(value as PatientSearchField)}
+      hasActiveFilters={hasActiveFilters}
+      onClear={onClear}
+    />
   );
 }

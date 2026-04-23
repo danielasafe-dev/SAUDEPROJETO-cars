@@ -5,6 +5,8 @@ using SPI.Application.Services.Access;
 using SPI.Domain.Enums;
 using SPI.Domain.Repositories;
 
+using SPI.Application.Config;
+
 namespace SPI.Application.Services;
 
 public sealed class UsersAppService : IUsersAppService

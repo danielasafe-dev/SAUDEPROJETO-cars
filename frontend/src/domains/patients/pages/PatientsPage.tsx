@@ -22,7 +22,8 @@ import type { PatientSearchField } from '../types';
 import { matchesPatientSearch } from '../components/utils/patientUtils';
 
 export default function PatientsPage() {
-  const isAdmin = useAuthStore((state) => state.user?.role === 'admin');
+  const user = useAuthStore((state) => state.user);
+  const isAdmin = user?.role === 'admin';
   const [patients, setPatients] = useState<Patient[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,10 +44,7 @@ export default function PatientsPage() {
   useEffect(() => {
     const initialize = async () => {
       try {
-        const [patientsData, groupsData] = await Promise.all([
-          getPatients(),
-          isAdmin ? getGroups() : Promise.resolve([] as Group[]),
-        ]);
+        const [patientsData, groupsData] = await Promise.all([getPatients(), getGroups()]);
         setPatients(patientsData);
         setGroups(groupsData);
         setError('');
@@ -58,7 +56,7 @@ export default function PatientsPage() {
     };
 
     initialize();
-  }, [isAdmin]);
+  }, []);
 
   const handleCreate = async (data: CreatePatientInput) => {
     await createPatient(data);
@@ -76,6 +74,21 @@ export default function PatientsPage() {
   };
 
   const normalizedSearch = search.trim().toLowerCase();
+  const defaultCreateGroupId = (() => {
+    if ((user?.groupIds?.length ?? 0) === 1) {
+      const userGroupId = user!.groupIds[0];
+      return groups.some((group) => group.id === userGroupId) ? String(userGroupId) : '';
+    }
+
+    if (groups.length === 1) {
+      return String(groups[0].id);
+    }
+
+    return '';
+  })();
+
+  const requireGroupSelection = isAdmin || groups.length > 1;
+
   const filteredPatients = patients.filter((patient) => {
     if (!normalizedSearch) {
       return true;
@@ -111,6 +124,10 @@ export default function PatientsPage() {
         searchField={searchField}
         onSearchChange={setSearch}
         onSearchFieldChange={setSearchField}
+        onClear={() => {
+          setSearch('');
+          setSearchField('all');
+        }}
       />
 
       {error && (
@@ -136,7 +153,8 @@ export default function PatientsPage() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         groups={groups}
-        requireGroupSelection={isAdmin}
+        defaultGroupId={defaultCreateGroupId}
+        requireGroupSelection={requireGroupSelection}
         onSubmit={handleCreate}
       />
       <PatientEditDialog
@@ -144,7 +162,7 @@ export default function PatientsPage() {
         open={editPatient !== null}
         onClose={() => setEditPatient(null)}
         groups={groups}
-        requireGroupSelection={isAdmin}
+        requireGroupSelection={requireGroupSelection}
         onSubmit={handleEdit}
       />
       <PatientDetailsDialog

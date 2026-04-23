@@ -14,6 +14,8 @@ function normalizeLoginResponse(payload: unknown): TokenResponse {
       email: String(rawUser.email ?? rawUser.Email ?? ''),
       role: String(rawUser.role ?? rawUser.Role ?? '') as TokenResponse['user']['role'],
       ativo: Boolean(rawUser.ativo ?? rawUser.Ativo ?? false),
+      groupIds: normalizeNumberArray(rawUser.groupIds ?? rawUser.GroupIds ?? rawUser.group_ids),
+      groupNames: normalizeStringArray(rawUser.groupNames ?? rawUser.GroupNames ?? rawUser.group_names),
       criado_em: String(rawUser.criado_em ?? rawUser.criadoEm ?? rawUser.CriadoEm ?? ''),
     },
   };
@@ -48,6 +50,8 @@ export async function loginReq(data: LoginRequest): Promise<TokenResponse> {
           email: data.email,
           role: 'admin',
           ativo: true,
+          groupIds: [],
+          groupNames: [],
           criado_em: new Date().toISOString(),
         },
       };
@@ -104,4 +108,24 @@ export async function setPasswordFromInvite(data: SetPasswordFromInviteRequest) 
   }
 
   await api.post('/api/auth/set-password', data);
+}
+
+function normalizeNumberArray(value: unknown): number[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => Number(item))
+    .filter((item) => Number.isFinite(item) && item > 0);
+}
+
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => String(item).trim())
+    .filter(Boolean);
 }

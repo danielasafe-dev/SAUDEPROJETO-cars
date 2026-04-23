@@ -18,6 +18,8 @@ export interface TokenResponse {
     email: string;
     role: UserRole;
     ativo: boolean;
+    groupIds: number[];
+    groupNames: string[];
     criado_em: string;
   };
 }

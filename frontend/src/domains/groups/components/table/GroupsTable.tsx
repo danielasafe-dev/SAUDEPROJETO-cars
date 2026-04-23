@@ -1,5 +1,6 @@
 import { Eye, Pencil, Trash2 } from 'lucide-react';
 import type { Group } from '../../types';
+import { isAdminDefaultGroup } from '../../utils/systemGroupRules';
 import {
   formatGroupDate,
   getGroupStatusBadgeClass,
@@ -62,22 +63,26 @@ export default function GroupsTable({
                     <Eye className="h-3.5 w-3.5" />
                     Visualizar
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => onEdit(group)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-50"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onDelete(group)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    Excluir
-                  </button>
+                  {!isAdminDefaultGroup(group) && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => onEdit(group)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-50"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDelete(group)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Excluir
+                      </button>
+                    </>
+                  )}
                 </div>
               </td>
             </tr>

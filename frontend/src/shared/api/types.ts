@@ -23,6 +23,8 @@ export interface TokenResponse {
     email: string;
     role: 'admin' | 'analista' | 'agente_saude' | 'gestor' | 'avaliador';
     ativo: boolean;
+    groupIds: number[];
+    groupNames: string[];
     criado_em: string;
   };
 }

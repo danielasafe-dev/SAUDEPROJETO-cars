@@ -21,12 +21,14 @@ public static class DomainToDtoMapper
         PodeAvaliar = user.Role.CanEvaluate(),
         GroupIds = user.GroupMemberships
             .Select(x => x.GroupId)
+            .Union(user.ManagedGroups.Select(x => x.Id))
             .Distinct()
             .OrderBy(x => x)
             .ToArray(),
         GroupNames = user.GroupMemberships
             .Where(x => x.Group is not null)
             .Select(x => x.Group.Nome)
+            .Union(user.ManagedGroups.Select(x => x.Nome))
             .Distinct()
             .OrderBy(x => x)
             .ToArray(),
@@ -42,9 +44,16 @@ public static class DomainToDtoMapper
         Sexo = patient.Sexo,
         Idade = patient.Idade,
         AvaliadorId = patient.AvaliadorId,
+        NomeResponsavel = patient.NomeResponsavel,
         Telefone = patient.Telefone,
         Email = patient.Email,
-        Endereco = patient.Endereco,
+        Cep = patient.Cep,
+        Estado = patient.Estado,
+        Cidade = patient.Cidade,
+        Bairro = patient.Bairro,
+        Rua = patient.Rua,
+        Numero = patient.Numero,
+        Complemento = patient.Complemento,
         Observacoes = patient.Observacoes,
         Documentos = patient.Documentos,
         Historico = patient.Historico,

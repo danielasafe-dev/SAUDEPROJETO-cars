@@ -7,6 +7,8 @@ export interface User {
   email: string;
   role: UserRole;
   ativo: boolean;
+  groupIds: number[];
+  groupNames: string[];
   criado_em: string;
 }
 
@@ -18,9 +20,16 @@ export interface Patient {
   cpf?: string | null;
   data_nascimento?: string | null;
   sexo?: 'masculino' | 'feminino' | 'outro' | null;
+  nome_responsavel?: string | null;
   telefone?: string | null;
   email?: string | null;
-  endereco?: string | null;
+  cep?: string | null;
+  estado?: string | null;
+  cidade?: string | null;
+  bairro?: string | null;
+  rua?: string | null;
+  numero?: string | null;
+  complemento?: string | null;
   observacoes?: string | null;
   documentos?: string | null;
   historico?: string | null;

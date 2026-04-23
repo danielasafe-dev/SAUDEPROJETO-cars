@@ -12,12 +12,17 @@ export interface PatientFormValues {
   dataNascimento: string;
   sexo: PatientFormSex;
   groupId: string;
+  nomeResponsavel: string;
   telefone: string;
   email: string;
-  endereco: string;
+  cep: string;
+  estado: string;
+  cidade: string;
+  bairro: string;
+  rua: string;
+  numero: string;
+  complemento: string;
   observacoes: string;
-  documentos: string;
-  historico: string;
 }
 
 export interface PatientUpsertInput {
@@ -26,10 +31,15 @@ export interface PatientUpsertInput {
   data_nascimento: string;
   sexo: PatientSex;
   groupId?: number;
+  nome_responsavel?: string;
   telefone?: string;
   email?: string;
-  endereco?: string;
+  cep?: string;
+  estado?: string;
+  cidade?: string;
+  bairro?: string;
+  rua?: string;
+  numero?: string;
+  complemento?: string;
   observacoes?: string;
-  documentos?: string;
-  historico?: string;
 }

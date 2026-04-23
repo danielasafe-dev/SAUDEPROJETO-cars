@@ -21,6 +21,10 @@ public sealed class CreatePatientRequestDto
     [RegularExpression("^(masculino|feminino|outro)$", ErrorMessage = "Informe um sexo valido.")]
     public string Sexo { get; init; } = string.Empty;
 
+    [JsonPropertyName("nome_responsavel")]
+    [MaxLength(200)]
+    public string? NomeResponsavel { get; init; }
+
     [MaxLength(30)]
     public string? Telefone { get; init; }
 
@@ -28,8 +32,28 @@ public sealed class CreatePatientRequestDto
     [MaxLength(200)]
     public string? Email { get; init; }
 
-    [MaxLength(500)]
-    public string? Endereco { get; init; }
+    [RegularExpression(@"^\D*(\d\D*){8}$", ErrorMessage = "Informe um CEP valido com 8 digitos.")]
+    [MaxLength(9)]
+    public string? Cep { get; init; }
+
+    [RegularExpression("^(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)$", ErrorMessage = "Informe uma UF valida.")]
+    [MaxLength(2)]
+    public string? Estado { get; init; }
+
+    [MaxLength(120)]
+    public string? Cidade { get; init; }
+
+    [MaxLength(120)]
+    public string? Bairro { get; init; }
+
+    [MaxLength(200)]
+    public string? Rua { get; init; }
+
+    [MaxLength(30)]
+    public string? Numero { get; init; }
+
+    [MaxLength(200)]
+    public string? Complemento { get; init; }
 
     [MaxLength(2000)]
     public string? Observacoes { get; init; }
