@@ -1,4 +1,5 @@
 import type { UserRole } from '@/types';
+import type { Group } from '@/domains/groups/types';
 import { roleOptions } from '../utils/userUtils';
 
 export interface UserFormValues {
@@ -6,11 +7,14 @@ export interface UserFormValues {
   email: string;
   confirmEmail: string;
   role: UserRole;
+  groupIds: number[];
 }
 
 interface UserFormFieldsProps {
   values: UserFormValues;
-  onChange: (field: keyof UserFormValues, value: string) => void;
+  onChange: (field: Exclude<keyof UserFormValues, 'groupIds'>, value: string) => void;
+  onGroupIdsChange?: (groupIds: number[]) => void;
+  groups?: Group[];
   disabled?: boolean;
   emailHint?: string;
 }
@@ -18,9 +22,24 @@ interface UserFormFieldsProps {
 export default function UserFormFields({
   values,
   onChange,
+  onGroupIdsChange,
+  groups = [],
   disabled = false,
   emailHint,
 }: UserFormFieldsProps) {
+  const showGroups = values.role !== 'analista' && groups.length > 0;
+
+  const toggleGroup = (groupId: number) => {
+    if (!onGroupIdsChange) {
+      return;
+    }
+
+    const nextGroupIds = values.groupIds.includes(groupId)
+      ? values.groupIds.filter((id) => id !== groupId)
+      : [...values.groupIds, groupId];
+    onGroupIdsChange(nextGroupIds);
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
@@ -75,6 +94,26 @@ export default function UserFormFields({
           </select>
         </div>
       </div>
+
+      {showGroups && (
+        <div>
+          <label className="mb-2 block text-sm font-medium">Grupos vinculados</label>
+          <div className="grid gap-2 rounded-lg border border-gray-200 p-3 md:grid-cols-2">
+            {groups.map((group) => (
+              <label key={group.id} className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={values.groupIds.includes(group.id)}
+                  onChange={() => toggleGroup(group.id)}
+                  disabled={disabled}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed"
+                />
+                <span>{group.nome}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
 
       {emailHint && <div className="text-xs text-gray-500">{emailHint}</div>}
     </div>

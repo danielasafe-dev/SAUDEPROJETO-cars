@@ -6,6 +6,7 @@ export interface CreateUserInput {
   nome: string;
   email: string;
   role: UserRole;
+  groupIds?: number[];
 }
 
 export interface UpdateUserInput {
@@ -32,7 +33,7 @@ export async function createUser(data: CreateUserInput) {
       email: data.email,
       role: data.role,
       ativo: true,
-      groupIds: [],
+      groupIds: data.groupIds ?? [],
       groupNames: [],
       criado_em: new Date().toISOString(),
     } satisfies User;

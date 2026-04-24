@@ -36,15 +36,13 @@ public sealed class PatientsAppService : IPatientsAppService
         var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
             ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
 
-        if (!actor.Role.CanAccessOperationalModules())
+        if (!actor.Role.CanViewPatients())
         {
             throw new UnauthorizedAccessException("Usuario sem permissao para acessar pacientes.");
         }
 
         var accessScope = AccessScopeResolver.Resolve(actor);
-        var patients = actor.Role == UserRole.Admin
-            ? await _patientRepository.ListAsync(cancellationToken)
-            : await _patientRepository.ListByGroupIdsAsync(accessScope.OperationalGroupIds, cancellationToken);
+        var patients = await _patientRepository.ListByGroupIdsAsync(accessScope.OperationalGroupIds, cancellationToken);
 
         return patients.Select(x => x.ToDto()).ToList();
     }
@@ -54,7 +52,7 @@ public sealed class PatientsAppService : IPatientsAppService
         var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
             ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
 
-        if (!actor.Role.CanAccessOperationalModules())
+        if (!actor.Role.CanManagePatients())
         {
             throw new UnauthorizedAccessException("Usuario sem permissao para cadastrar pacientes.");
         }
@@ -96,7 +94,7 @@ public sealed class PatientsAppService : IPatientsAppService
         var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
             ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
 
-        if (!actor.Role.CanAccessOperationalModules())
+        if (!actor.Role.CanManagePatients())
         {
             throw new UnauthorizedAccessException("Usuario sem permissao para editar pacientes.");
         }
@@ -105,7 +103,7 @@ public sealed class PatientsAppService : IPatientsAppService
             ?? throw new KeyNotFoundException("Paciente nao encontrado.");
 
         var accessScope = AccessScopeResolver.Resolve(actor);
-        if (actor.Role != UserRole.Admin && !accessScope.OperationalGroupIds.Contains(patient.GroupId))
+        if (!accessScope.OperationalGroupIds.Contains(patient.GroupId))
         {
             throw new UnauthorizedAccessException("Usuario sem permissao para editar este paciente.");
         }
@@ -168,17 +166,12 @@ public sealed class PatientsAppService : IPatientsAppService
     {
         if (requestGroupId.HasValue && requestGroupId.Value > 0)
         {
-            if (actorRole != UserRole.Admin && !accessScope.OperationalGroupIds.Contains(requestGroupId.Value))
+            if (!accessScope.OperationalGroupIds.Contains(requestGroupId.Value))
             {
                 throw new UnauthorizedAccessException("Usuario sem permissao para operar neste grupo.");
             }
 
             return requestGroupId.Value;
-        }
-
-        if (actorRole == UserRole.Admin)
-        {
-            throw new InvalidOperationException("Administradores devem informar o grupo do paciente.");
         }
 
         if (accessScope.OperationalGroupIds.Count == 1)
@@ -196,7 +189,7 @@ public sealed class PatientsAppService : IPatientsAppService
             return ResolveGroupId(requestGroupId, actorRole, accessScope);
         }
 
-        if (actorRole != UserRole.Admin && !accessScope.OperationalGroupIds.Contains(currentGroupId))
+        if (!accessScope.OperationalGroupIds.Contains(currentGroupId))
         {
             throw new UnauthorizedAccessException("Usuario sem permissao para operar neste grupo.");
         }

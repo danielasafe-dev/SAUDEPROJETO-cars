@@ -17,9 +17,12 @@ import UserPasswordInviteDialog from '../components/dialogs/UserPasswordInviteDi
 import type { User } from '@/types';
 import DataTable, { type Column } from '@/shared/components/table/DataTable';
 import { formatCreatedAt, formatRole, roleBadgeCls, statusBadgeCls } from '../components/utils/userUtils';
+import type { Group } from '@/domains/groups/types';
+import { getGroups } from '@/domains/groups/api';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
@@ -37,8 +40,9 @@ export default function UsersPage() {
   useEffect(() => {
     const initialize = async () => {
       try {
-        const data = await getUsers();
-        setUsers(data);
+        const [usersData, groupsData] = await Promise.all([getUsers(), getGroups()]);
+        setUsers(usersData);
+        setGroups(groupsData);
         setError('');
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Erro ao carregar usuarios');
@@ -180,7 +184,12 @@ export default function UsersPage() {
         />
       )}
 
-      <UserCreateDialog open={createOpen} onClose={() => setCreateOpen(false)} onSubmit={handleCreate} />
+      <UserCreateDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        groups={groups}
+        onSubmit={handleCreate}
+      />
       <UserDetailsDialog user={detailsUser} open={detailsUser !== null} onClose={() => setDetailsUser(null)} />
       <UserEditDialog user={editUser} open={editUser !== null} onClose={() => setEditUser(null)} onSubmit={handleEdit} />
       <UserPasswordInviteDialog

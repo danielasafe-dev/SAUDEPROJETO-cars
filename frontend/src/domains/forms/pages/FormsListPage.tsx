@@ -5,9 +5,11 @@ import { getForms } from '../api';
 import type { Formulario } from '../types';
 import FormCreateDialog from '../components/FormCreateDialog';
 import DataTable, { type Column } from '@/shared/components/table/DataTable';
+import { useAuthStore } from '@/shared/store/authStore';
 
 export default function FormsListPage() {
   const navigate = useNavigate();
+  const canManageForms = useAuthStore((state) => state.canManageForms);
   const [forms, setForms] = useState<Formulario[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
@@ -23,7 +25,7 @@ export default function FormsListPage() {
       const data = await getForms();
       setForms(data);
     } catch {
-      // silently fail
+      // Keep the page usable; existing behavior does not surface this error.
     } finally {
       setLoading(false);
     }
@@ -35,17 +37,20 @@ export default function FormsListPage() {
 
   const columns: Column<Formulario>[] = [
     {
-      header: 'Ações',
-      render: (f) => (
-        <button
-          type="button"
-          onClick={() => navigate(`/formularios/${f.id}`)}
-          className="inline-flex items-center gap-1 rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-50"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-          Editar
-        </button>
-      ),
+      header: 'Acoes',
+      render: (f) =>
+        canManageForms() ? (
+          <button
+            type="button"
+            onClick={() => navigate(`/formularios/${f.id}`)}
+            className="inline-flex items-center gap-1 rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-50"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Editar
+          </button>
+        ) : (
+          <span className="text-xs text-gray-400">Somente leitura</span>
+        ),
     },
     {
       header: 'Nome',
@@ -57,12 +62,12 @@ export default function FormsListPage() {
       ),
     },
     {
-      header: 'Descrição',
-      render: (f) => <span className="text-gray-500">{f.descricao || '—'}</span>,
+      header: 'Descricao',
+      render: (f) => <span className="text-gray-500">{f.descricao || '-'}</span>,
     },
     {
       header: 'Grupo',
-      render: (f) => <span className="text-gray-500">{f.groupNome || '—'}</span>,
+      render: (f) => <span className="text-gray-500">{f.groupNome || '-'}</span>,
     },
     {
       header: 'Perguntas',
@@ -85,23 +90,25 @@ export default function FormsListPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold">Formulários</h2>
-            <p className="text-sm text-gray-500">{forms.length} formulário(s) cadastrado(s)</p>
+            <h2 className="text-xl font-bold">Formularios</h2>
+            <p className="text-sm text-gray-500">{forms.length} formulario(s) cadastrado(s)</p>
           </div>
-          <button
-            onClick={() => setShowCreateDialog(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            Novo Formulário
-          </button>
+          {canManageForms() && (
+            <button
+              onClick={() => setShowCreateDialog(true)}
+              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4" />
+              Novo Formulario
+            </button>
+          )}
         </div>
 
         <input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           placeholder="Buscar por nome..."
-          className="w-full max-w-sm px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full max-w-sm rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
         />
 
         {loading ? (
@@ -111,7 +118,7 @@ export default function FormsListPage() {
             data={filtered}
             columns={columns}
             keyExtractor={(f) => f.id}
-            emptyMessage="Nenhum formulário cadastrado."
+            emptyMessage={filter ? 'Nenhum formulario encontrado.' : 'Nenhum formulario cadastrado.'}
           />
         )}
       </div>

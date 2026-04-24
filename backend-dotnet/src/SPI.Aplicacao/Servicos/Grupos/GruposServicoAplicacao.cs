@@ -39,9 +39,7 @@ public sealed class GroupsAppService : IGroupsAppService
         }
 
         var accessScope = AccessScopeResolver.Resolve(actor);
-        var groups = actor.Role == UserRole.Admin
-            ? await _groupRepository.ListAsync(cancellationToken)
-            : await _groupRepository.ListByIdsAsync(accessScope.OperationalGroupIds, cancellationToken);
+        var groups = await _groupRepository.ListByIdsAsync(accessScope.OperationalGroupIds, cancellationToken);
 
         return groups.Select(x => x.ToDto()).ToList();
     }
@@ -93,6 +91,12 @@ public sealed class GroupsAppService : IGroupsAppService
         var group = await _groupRepository.GetByIdAsync(groupId, cancellationToken)
             ?? throw new KeyNotFoundException("Grupo nao encontrado.");
 
+        var accessScope = AccessScopeResolver.Resolve(actor);
+        if (actor.Role == UserRole.Admin && !accessScope.OperationalGroupIds.Contains(group.Id))
+        {
+            throw new UnauthorizedAccessException("Administrador so pode alterar grupos aos quais esta vinculado.");
+        }
+
         SystemGroupRules.EnsureGroupCanBeManaged(group);
 
         if (actor.Role.HasManagerPrivileges() && group.GestorId != actor.Id)
@@ -139,6 +143,12 @@ public sealed class GroupsAppService : IGroupsAppService
 
         var group = await _groupRepository.GetDetailedByIdAsync(groupId, cancellationToken)
             ?? throw new KeyNotFoundException("Grupo nao encontrado.");
+
+        var accessScope = AccessScopeResolver.Resolve(actor);
+        if (actor.Role == UserRole.Admin && !accessScope.OperationalGroupIds.Contains(group.Id))
+        {
+            throw new UnauthorizedAccessException("Administrador so pode excluir grupos aos quais esta vinculado.");
+        }
 
         SystemGroupRules.EnsureGroupCanBeDeleted(group);
 

@@ -39,7 +39,7 @@ public sealed class DashboardAppService : IDashboardAppService
             throw new UnauthorizedAccessException("Usuario sem permissao para visualizar dashboard.");
         }
 
-        if (actor.Role is UserRole.Admin or UserRole.Analyst)
+        if (actor.Role == UserRole.Analyst)
         {
             var users = await _userRepository.ListAsync(cancellationToken);
             var patients = await _patientRepository.ListAsync(cancellationToken);

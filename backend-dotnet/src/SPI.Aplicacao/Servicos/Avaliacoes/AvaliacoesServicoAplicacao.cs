@@ -33,15 +33,13 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
     public async Task<IReadOnlyCollection<EvaluationResponseDto>> ListAsync(int actorUserId, CancellationToken cancellationToken = default)
     {
         var actor = await GetActorAsync(actorUserId, cancellationToken);
-        if (!actor.Role.CanAccessOperationalModules())
+        if (!actor.Role.CanViewEvaluations())
         {
             throw new UnauthorizedAccessException("Usuario sem permissao para acessar avaliacoes.");
         }
 
         var accessScope = AccessScopeResolver.Resolve(actor);
-        var evaluations = actor.Role == UserRole.Admin
-            ? await _evaluationRepository.ListDetailedAsync(cancellationToken)
-            : await _evaluationRepository.ListDetailedByGroupIdsAsync(accessScope.OperationalGroupIds, cancellationToken);
+        var evaluations = await _evaluationRepository.ListDetailedByGroupIdsAsync(accessScope.OperationalGroupIds, cancellationToken);
 
         return evaluations.Select(x => x.ToDto()).ToList();
     }
@@ -49,7 +47,7 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
     public async Task<EvaluationResponseDto?> GetByIdAsync(int id, int actorUserId, CancellationToken cancellationToken = default)
     {
         var actor = await GetActorAsync(actorUserId, cancellationToken);
-        if (!actor.Role.CanAccessOperationalModules())
+        if (!actor.Role.CanViewEvaluations())
         {
             throw new UnauthorizedAccessException("Usuario sem permissao para acessar avaliacoes.");
         }
@@ -180,11 +178,6 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
 
     private static void EnsureCanAccessGroup(User actor, int groupId, bool allowManagedOnly)
     {
-        if (actor.Role == UserRole.Admin)
-        {
-            return;
-        }
-
         var accessScope = AccessScopeResolver.Resolve(actor);
         var allowedGroupIds = allowManagedOnly
             ? accessScope.ManagedGroupIds

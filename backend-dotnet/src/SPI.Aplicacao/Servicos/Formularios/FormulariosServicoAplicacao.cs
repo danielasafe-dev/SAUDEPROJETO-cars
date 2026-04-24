@@ -31,13 +31,13 @@ public sealed class FormsAppService : IFormsAppService
         var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
             ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
 
-        if (!actor.Role.CanAccessOperationalModules())
+        if (!actor.Role.CanViewForms())
         {
             throw new UnauthorizedAccessException("Usuario sem permissao para acessar formularios.");
         }
 
         var accessScope = AccessScopeResolver.Resolve(actor);
-        var forms = actor.Role == UserRole.Admin
+        var forms = actor.Role == UserRole.Analyst
             ? await _formRepository.ListAsync(cancellationToken)
             : await _formRepository.ListByGroupIdsAsync(accessScope.OperationalGroupIds, cancellationToken);
 
@@ -49,7 +49,7 @@ public sealed class FormsAppService : IFormsAppService
         var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
             ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
 
-        if (!actor.Role.CanAccessOperationalModules())
+        if (!actor.Role.CanViewForms())
         {
             throw new UnauthorizedAccessException("Usuario sem permissao para acessar formularios.");
         }
@@ -138,25 +138,29 @@ public sealed class FormsAppService : IFormsAppService
 
     private static void ValidateFormGroupAccess(UserRole role, int? groupId, AccessScope accessScope)
     {
-        if (role == UserRole.Admin)
-        {
-            return;
-        }
-
         if (groupId is null)
         {
+            if (role == UserRole.Admin)
+            {
+                return;
+            }
+
             throw new UnauthorizedAccessException("Somente administradores podem criar formularios globais.");
         }
 
-        if (!accessScope.ManagedGroupIds.Contains(groupId.Value))
+        var allowedGroupIds = role.HasManagerPrivileges()
+            ? accessScope.ManagedGroupIds
+            : accessScope.OperationalGroupIds;
+
+        if (!allowedGroupIds.Contains(groupId.Value))
         {
-            throw new UnauthorizedAccessException("Perfil de gestao so pode criar ou alterar formularios do proprio grupo.");
+            throw new UnauthorizedAccessException("Usuario sem permissao para criar ou alterar formularios deste grupo.");
         }
     }
 
     private static void EnsureCanAccessForm(SPI.Domain.Entities.User actor, int? groupId)
     {
-        if (actor.Role == UserRole.Admin || groupId is null)
+        if (actor.Role == UserRole.Analyst || groupId is null)
         {
             return;
         }

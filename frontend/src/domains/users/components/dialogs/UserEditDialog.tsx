@@ -17,6 +17,7 @@ function buildInitialValues(user: User | null): UserFormValues {
     email: user?.email ?? '',
     confirmEmail: user?.email ?? '',
     role: user?.role ?? 'agente_saude',
+    groupIds: user?.groupIds ?? [],
   };
 }
 
@@ -33,7 +34,7 @@ export default function UserEditDialog({ user, open, onClose, onSubmit }: UserEd
     }
   }, [open, user]);
 
-  const handleChange = (field: keyof UserFormValues, value: string) => {
+  const handleChange = (field: Exclude<keyof UserFormValues, 'groupIds'>, value: string) => {
     setValues((current) => ({ ...current, [field]: value }));
   };
 

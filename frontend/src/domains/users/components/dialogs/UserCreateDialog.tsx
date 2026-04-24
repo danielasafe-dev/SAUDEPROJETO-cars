@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import Dialog from '@/shared/components/dialog/Dialog';
 import UserFormFields, { type UserFormValues } from '../forms/UserFormFields';
 import type { CreateUserInput } from '../../api';
+import type { Group } from '@/domains/groups/types';
 
 interface UserCreateDialogProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: CreateUserInput) => Promise<void>;
+  groups?: Group[];
 }
 
 const initialValues: UserFormValues = {
@@ -14,12 +16,14 @@ const initialValues: UserFormValues = {
   email: '',
   confirmEmail: '',
   role: 'agente_saude',
+  groupIds: [],
 };
 
 export default function UserCreateDialog({
   open,
   onClose,
   onSubmit,
+  groups = [],
 }: UserCreateDialogProps) {
   const [values, setValues] = useState<UserFormValues>(initialValues);
   const [loading, setLoading] = useState(false);
@@ -33,10 +37,18 @@ export default function UserCreateDialog({
     }
   }, [open]);
 
-  const handleChange = (field: keyof UserFormValues, value: string) => {
+  const handleChange = (field: Exclude<keyof UserFormValues, 'groupIds'>, value: string) => {
     setValues((current) => ({
       ...current,
       [field]: field === 'role' ? value as UserFormValues['role'] : value,
+      ...(field === 'role' && value === 'analista' ? { groupIds: [] } : {}),
+    }));
+  };
+
+  const handleGroupIdsChange = (groupIds: number[]) => {
+    setValues((current) => ({
+      ...current,
+      groupIds,
     }));
   };
 
@@ -57,6 +69,7 @@ export default function UserCreateDialog({
         nome: values.nome.trim(),
         email,
         role: values.role,
+        groupIds: values.role === 'analista' ? [] : values.groupIds,
       });
       onClose();
     } catch (err: unknown) {
@@ -99,6 +112,8 @@ export default function UserCreateDialog({
         <UserFormFields
           values={values}
           onChange={handleChange}
+          onGroupIdsChange={handleGroupIdsChange}
+          groups={groups}
           disabled={loading}
           emailHint="Os dois campos de e-mail precisam ser iguais. A definicao da senha ficara para o fluxo de convite por e-mail."
         />

@@ -106,9 +106,9 @@ public sealed class AuthAppService : IAuthAppService
         }
 
         var targetRole = UserRoleExtensions.FromApiValue(request.Role);
-        if (actor.Role.HasManagerPrivileges() && targetRole == UserRole.Admin)
+        if (actor.Role.HasManagerPrivileges() && targetRole is UserRole.Admin or UserRole.Analyst)
         {
-            throw new UnauthorizedAccessException("Perfil de gestao nao pode criar administradores.");
+            throw new UnauthorizedAccessException("Perfil de gestao nao pode criar administradores ou analistas.");
         }
 
         var requestedGroupIds = request.GroupIds
@@ -116,6 +116,16 @@ public sealed class AuthAppService : IAuthAppService
             .Distinct()
             .OrderBy(x => x)
             .ToArray();
+
+        if (targetRole == UserRole.Analyst && requestedGroupIds.Length > 0)
+        {
+            throw new UnauthorizedAccessException("Analistas nao podem ser vinculados a grupos.");
+        }
+
+        if (actor.Role == UserRole.Admin && targetRole != UserRole.Analyst && requestedGroupIds.Any(x => !accessScope.OperationalGroupIds.Contains(x)))
+        {
+            throw new UnauthorizedAccessException("Administrador so pode vincular usuarios aos grupos aos quais esta vinculado.");
+        }
 
         if (actor.Role.HasManagerPrivileges() && requestedGroupIds.Any(x => !accessScope.ManagedGroupIds.Contains(x)))
         {
@@ -169,6 +179,8 @@ public sealed class AuthAppService : IAuthAppService
 
         var targetUser = await _userRepository.GetDetailedByIdAsync(targetUserId, cancellationToken)
             ?? throw new KeyNotFoundException("Usuario nao encontrado.");
+
+        EnsureCanManageTargetUser(actor, targetUser);
 
         if (!targetUser.Ativo)
         {
@@ -227,6 +239,32 @@ public sealed class AuthAppService : IAuthAppService
         }
 
         return string.Empty;
+    }
+
+    private static void EnsureCanManageTargetUser(SPI.Domain.Entities.User actor, SPI.Domain.Entities.User targetUser)
+    {
+        var accessScope = AccessScopeResolver.Resolve(actor);
+        var targetGroupIds = targetUser.GroupMemberships.Select(x => x.GroupId).Distinct().ToArray();
+
+        if (actor.Role == UserRole.Admin && targetUser.Role != UserRole.Analyst && targetGroupIds.Any(x => !accessScope.OperationalGroupIds.Contains(x)))
+        {
+            throw new UnauthorizedAccessException("Administrador so pode gerenciar usuarios dos grupos aos quais esta vinculado.");
+        }
+
+        if (!actor.Role.HasManagerPrivileges())
+        {
+            return;
+        }
+
+        if (targetUser.Role is UserRole.Admin or UserRole.Analyst)
+        {
+            throw new UnauthorizedAccessException("Perfil de gestao nao pode gerenciar este tipo de usuario.");
+        }
+
+        if (targetGroupIds.Any(x => !accessScope.ManagedGroupIds.Contains(x)))
+        {
+            throw new UnauthorizedAccessException("Perfil de gestao so pode gerenciar usuarios dos grupos que gerencia.");
+        }
     }
 }
 
