@@ -17,12 +17,34 @@ public sealed class PatientResponseDto
     [JsonPropertyName("avaliador_id")]
     public int? AvaliadorId { get; init; }
 
+    [JsonPropertyName("nome_responsavel")]
+    public string? NomeResponsavel { get; init; }
+
     public string? Telefone { get; init; }
     public string? Email { get; init; }
-    public string? Endereco { get; init; }
+
+    [JsonPropertyName("cep")]
+    public string? Cep { get; init; }
+
+    [JsonPropertyName("estado")]
+    public string? Estado { get; init; }
+
+    [JsonPropertyName("cidade")]
+    public string? Cidade { get; init; }
+
+    [JsonPropertyName("bairro")]
+    public string? Bairro { get; init; }
+
+    [JsonPropertyName("rua")]
+    public string? Rua { get; init; }
+
+    [JsonPropertyName("numero")]
+    public string? Numero { get; init; }
+
+    [JsonPropertyName("complemento")]
+    public string? Complemento { get; init; }
+
     public string? Observacoes { get; init; }
-    public string? Documentos { get; init; }
-    public string? Historico { get; init; }
 
     [JsonPropertyName("group_id")]
     public int GroupId { get; init; }

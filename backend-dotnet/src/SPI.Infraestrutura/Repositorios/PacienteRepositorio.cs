@@ -43,6 +43,8 @@ public sealed class PatientRepository : IPatientRepository
 
     public Task AddAsync(Patient patient, CancellationToken cancellationToken = default) =>
         _context.Patients.AddAsync(patient, cancellationToken).AsTask();
+
+    public void Remove(Patient patient) => _context.Patients.Remove(patient);
 }
 
 

@@ -32,6 +32,8 @@ export async function createUser(data: CreateUserInput) {
       email: data.email,
       role: data.role,
       ativo: true,
+      groupIds: [],
+      groupNames: [],
       criado_em: new Date().toISOString(),
     } satisfies User;
     mockUsers.push(u);

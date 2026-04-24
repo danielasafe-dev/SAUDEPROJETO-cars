@@ -166,9 +166,35 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
 
             SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-            b.Property<int?>("AvaliadorId")
-                .HasColumnType("int")
-                .HasColumnName("avaliador_id");
+              b.Property<int?>("AvaliadorId")
+                  .HasColumnType("int")
+                  .HasColumnName("avaliador_id");
+
+              b.Property<string>("Bairro")
+                  .HasMaxLength(120)
+                  .HasColumnType("nvarchar(120)")
+                  .HasColumnName("bairro");
+
+              b.Property<string>("Cep")
+                  .HasMaxLength(8)
+                  .HasColumnType("nvarchar(8)")
+                  .HasColumnName("cep");
+
+              b.Property<string>("Cidade")
+                  .HasMaxLength(120)
+                  .HasColumnType("nvarchar(120)")
+                  .HasColumnName("cidade");
+
+              b.Property<string>("Complemento")
+                  .HasMaxLength(200)
+                  .HasColumnType("nvarchar(200)")
+                  .HasColumnName("complemento");
+
+              b.Property<string>("Cpf")
+                  .IsRequired()
+                  .HasMaxLength(11)
+                  .HasColumnType("nvarchar(11)")
+                  .HasColumnName("cpf");
 
             b.Property<string>("Cpf")
                 .IsRequired()
@@ -182,33 +208,28 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 .HasColumnName("criado_em")
                 .HasDefaultValueSql("GETUTCDATE()");
 
-            b.Property<DateTime>("DataNascimento")
-                .HasColumnType("date")
-                .HasColumnName("data_nascimento");
+              b.Property<DateTime>("DataNascimento")
+                  .HasColumnType("date")
+                  .HasColumnName("data_nascimento");
 
-            b.Property<string>("Documentos")
-                .HasMaxLength(4000)
-                .HasColumnType("nvarchar(4000)")
-                .HasColumnName("documentos");
+              b.Property<string>("NomeResponsavel")
+                  .HasMaxLength(200)
+                  .HasColumnType("nvarchar(200)")
+                  .HasColumnName("nome_responsavel");
 
-            b.Property<string>("Email")
-                .HasMaxLength(200)
-                .HasColumnType("nvarchar(200)")
-                .HasColumnName("email");
+              b.Property<string>("Email")
+                  .HasMaxLength(200)
+                  .HasColumnType("nvarchar(200)")
+                  .HasColumnName("email");
 
-            b.Property<string>("Endereco")
-                .HasMaxLength(500)
-                .HasColumnType("nvarchar(500)")
-                .HasColumnName("endereco");
+              b.Property<string>("Estado")
+                  .HasMaxLength(2)
+                  .HasColumnType("nvarchar(2)")
+                  .HasColumnName("estado");
 
-            b.Property<int>("GroupId")
-                .HasColumnType("int")
-                .HasColumnName("group_id");
-
-            b.Property<string>("Historico")
-                .HasMaxLength(4000)
-                .HasColumnType("nvarchar(4000)")
-                .HasColumnName("historico");
+              b.Property<int>("GroupId")
+                  .HasColumnType("int")
+                  .HasColumnName("group_id");
 
             b.Property<int?>("Idade")
                 .HasColumnType("int")
@@ -220,16 +241,26 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 .HasColumnType("nvarchar(200)")
                 .HasColumnName("nome");
 
-            b.Property<string>("Observacoes")
-                .HasMaxLength(2000)
-                .HasColumnType("nvarchar(2000)")
-                .HasColumnName("observacoes");
+              b.Property<string>("Observacoes")
+                  .HasMaxLength(2000)
+                  .HasColumnType("nvarchar(2000)")
+                  .HasColumnName("observacoes");
 
-            b.Property<string>("Sexo")
-                .IsRequired()
-                .HasMaxLength(20)
-                .HasColumnType("nvarchar(20)")
-                .HasColumnName("sexo");
+              b.Property<string>("Numero")
+                  .HasMaxLength(30)
+                  .HasColumnType("nvarchar(30)")
+                  .HasColumnName("numero");
+
+              b.Property<string>("Rua")
+                  .HasMaxLength(200)
+                  .HasColumnType("nvarchar(200)")
+                  .HasColumnName("rua");
+
+              b.Property<string>("Sexo")
+                  .IsRequired()
+                  .HasMaxLength(20)
+                  .HasColumnType("nvarchar(20)")
+                  .HasColumnName("sexo");
 
             b.Property<string>("Telefone")
                 .HasMaxLength(30)

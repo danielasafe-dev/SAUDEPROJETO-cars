@@ -5,6 +5,8 @@ using SPI.Application.Services.Access;
 using SPI.Domain.Enums;
 using SPI.Domain.Repositories;
 
+using SPI.Application.Config;
+
 namespace SPI.Application.Services;
 
 public sealed class PatientsAppService : IPatientsAppService
@@ -12,17 +14,20 @@ public sealed class PatientsAppService : IPatientsAppService
     private readonly IPatientRepository _patientRepository;
     private readonly IUserRepository _userRepository;
     private readonly IGroupRepository _groupRepository;
+    private readonly IEvaluationRepository _evaluationRepository;
     private readonly IUnitOfWork _unitOfWork;
 
     public PatientsAppService(
         IPatientRepository patientRepository,
         IUserRepository userRepository,
         IGroupRepository groupRepository,
+        IEvaluationRepository evaluationRepository,
         IUnitOfWork unitOfWork)
     {
         _patientRepository = patientRepository;
         _userRepository = userRepository;
         _groupRepository = groupRepository;
+        _evaluationRepository = evaluationRepository;
         _unitOfWork = unitOfWork;
     }
 
@@ -66,10 +71,15 @@ public sealed class PatientsAppService : IPatientsAppService
             request.Sexo,
             request.Telefone,
             request.Email,
-            request.Endereco,
+            request.NomeResponsavel,
+            request.Cep,
+            request.Estado,
+            request.Cidade,
+            request.Bairro,
+            request.Rua,
+            request.Numero,
+            request.Complemento,
             request.Observacoes,
-            request.Documentos,
-            request.Historico,
             actorUserId,
             group.Id);
         await _patientRepository.AddAsync(patient, cancellationToken);
@@ -111,14 +121,47 @@ public sealed class PatientsAppService : IPatientsAppService
             request.Sexo,
             request.Telefone,
             request.Email,
-            request.Endereco,
+            request.NomeResponsavel,
+            request.Cep,
+            request.Estado,
+            request.Cidade,
+            request.Bairro,
+            request.Rua,
+            request.Numero,
+            request.Complemento,
             request.Observacoes,
-            request.Documentos,
-            request.Historico,
             group.Id);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return patient.ToDto();
+    }
+
+    public async Task DeleteAsync(int id, int actorUserId, CancellationToken cancellationToken = default)
+    {
+        var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
+            ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
+
+        if (!actor.Role.CanAccessOperationalModules())
+        {
+            throw new UnauthorizedAccessException("Usuario sem permissao para excluir pacientes.");
+        }
+
+        var patient = await _patientRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new KeyNotFoundException("Paciente nao encontrado.");
+
+        var accessScope = AccessScopeResolver.Resolve(actor);
+        if (actor.Role != UserRole.Admin && !accessScope.OperationalGroupIds.Contains(patient.GroupId))
+        {
+            throw new UnauthorizedAccessException("Usuario sem permissao para excluir este paciente.");
+        }
+
+        if (await _evaluationRepository.AnyByPatientIdAsync(patient.Id, cancellationToken))
+        {
+            throw new InvalidOperationException("Nao e possivel excluir paciente com avaliacoes vinculadas.");
+        }
+
+        _patientRepository.Remove(patient);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     private static int ResolveGroupId(int? requestGroupId, UserRole actorRole, AccessScope accessScope)

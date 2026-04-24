@@ -67,6 +67,9 @@ public sealed class EvaluationRepository : IEvaluationRepository
     public Task<bool> AnyByGroupIdAsync(int groupId, CancellationToken cancellationToken = default) =>
         _context.Evaluations.AnyAsync(x => x.GroupId == groupId, cancellationToken);
 
+    public Task<bool> AnyByPatientIdAsync(int patientId, CancellationToken cancellationToken = default) =>
+        _context.Evaluations.AnyAsync(x => x.PatientId == patientId, cancellationToken);
+
     public Task<Evaluation?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
         _context.Evaluations.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 

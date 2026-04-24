@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import Dialog from '@/shared/components/dialog/Dialog';
 import type { Group } from '@/domains/groups/types';
 import type { PatientFormValues } from '../../types';
-import type { CreatePatientInput } from '../../api';
+import { lookupAddressByCep, type CreatePatientInput } from '../../api';
 import PatientFormFields from '../forms/PatientFormFields';
 import {
   buildPatientFormValues,
+  maskCepInput,
   mapPatientFormToInput,
   maskCpfInput,
   maskPhoneInput,
@@ -16,6 +17,7 @@ interface PatientCreateDialogProps {
   open: boolean;
   onClose: () => void;
   groups?: Group[];
+  defaultGroupId?: string;
   requireGroupSelection?: boolean;
   onSubmit: (data: CreatePatientInput) => Promise<void>;
 }
@@ -24,20 +26,30 @@ export default function PatientCreateDialog({
   open,
   onClose,
   groups = [],
+  defaultGroupId = '',
   requireGroupSelection = false,
   onSubmit,
 }: PatientCreateDialogProps) {
   const [values, setValues] = useState<PatientFormValues>(buildPatientFormValues());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [cepLookupLoading, setCepLookupLoading] = useState(false);
+  const [cepLookupMessage, setCepLookupMessage] = useState('');
+  const [cepLookupTone, setCepLookupTone] = useState<'neutral' | 'success' | 'error'>('neutral');
 
   useEffect(() => {
     if (open) {
-      setValues(buildPatientFormValues());
+      setValues({
+        ...buildPatientFormValues(),
+        groupId: defaultGroupId,
+      });
       setLoading(false);
       setError('');
+      setCepLookupLoading(false);
+      setCepLookupMessage('');
+      setCepLookupTone('neutral');
     }
-  }, [open]);
+  }, [defaultGroupId, open]);
 
   const handleChange = (field: keyof PatientFormValues, value: string) => {
     if (field === 'cpf') {
@@ -50,7 +62,45 @@ export default function PatientCreateDialog({
       return;
     }
 
+    if (field === 'cep') {
+      setCepLookupMessage('');
+      setCepLookupTone('neutral');
+      setValues((current) => ({ ...current, cep: maskCepInput(value) }));
+      return;
+    }
+
     setValues((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleCepBlur = async () => {
+    const cep = values.cep.replace(/\D/g, '');
+    if (cep.length !== 8) {
+      return;
+    }
+
+    setCepLookupLoading(true);
+    setCepLookupMessage('');
+    setCepLookupTone('neutral');
+
+    try {
+      const address = await lookupAddressByCep(cep);
+      setValues((current) => ({
+        ...current,
+        cep: maskCepInput(address.cep || current.cep),
+        estado: address.estado || current.estado,
+        cidade: address.cidade || current.cidade,
+        bairro: address.bairro || current.bairro,
+        rua: address.rua || current.rua,
+        complemento: current.complemento || address.complemento || '',
+      }));
+      setCepLookupMessage('Endereco preenchido automaticamente pelo CEP.');
+      setCepLookupTone('success');
+    } catch (err: unknown) {
+      setCepLookupMessage(err instanceof Error ? err.message : 'Nao foi possivel consultar o CEP.');
+      setCepLookupTone('error');
+    } finally {
+      setCepLookupLoading(false);
+    }
   };
 
   const handleSubmit = async (event: { preventDefault: () => void }) => {
@@ -79,7 +129,7 @@ export default function PatientCreateDialog({
       onClose={onClose}
       title="Novo paciente"
       description="Preencha os dados principais para cadastrar um novo paciente."
-      size="lg"
+      size="xl"
       closeDisabled={loading}
       footer={
         <>
@@ -106,9 +156,13 @@ export default function PatientCreateDialog({
         <PatientFormFields
           values={values}
           onChange={handleChange}
+          onCepBlur={handleCepBlur}
           groups={groups}
           showGroupField={requireGroupSelection}
           disabled={loading}
+          cepLookupLoading={cepLookupLoading}
+          cepLookupMessage={cepLookupMessage}
+          cepLookupTone={cepLookupTone}
         />
 
         {error && (

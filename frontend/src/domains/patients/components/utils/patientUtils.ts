@@ -12,6 +12,36 @@ export const patientSexOptions: { value: PatientSex; label: string }[] = [
   { value: 'outro', label: 'Outro' },
 ];
 
+export const brazilianStateOptions = [
+  { value: 'AC', label: 'AC - Acre' },
+  { value: 'AL', label: 'AL - Alagoas' },
+  { value: 'AP', label: 'AP - Amapa' },
+  { value: 'AM', label: 'AM - Amazonas' },
+  { value: 'BA', label: 'BA - Bahia' },
+  { value: 'CE', label: 'CE - Ceara' },
+  { value: 'DF', label: 'DF - Distrito Federal' },
+  { value: 'ES', label: 'ES - Espirito Santo' },
+  { value: 'GO', label: 'GO - Goias' },
+  { value: 'MA', label: 'MA - Maranhao' },
+  { value: 'MT', label: 'MT - Mato Grosso' },
+  { value: 'MS', label: 'MS - Mato Grosso do Sul' },
+  { value: 'MG', label: 'MG - Minas Gerais' },
+  { value: 'PA', label: 'PA - Para' },
+  { value: 'PB', label: 'PB - Paraiba' },
+  { value: 'PR', label: 'PR - Parana' },
+  { value: 'PE', label: 'PE - Pernambuco' },
+  { value: 'PI', label: 'PI - Piaui' },
+  { value: 'RJ', label: 'RJ - Rio de Janeiro' },
+  { value: 'RN', label: 'RN - Rio Grande do Norte' },
+  { value: 'RS', label: 'RS - Rio Grande do Sul' },
+  { value: 'RO', label: 'RO - Rondonia' },
+  { value: 'RR', label: 'RR - Roraima' },
+  { value: 'SC', label: 'SC - Santa Catarina' },
+  { value: 'SP', label: 'SP - Sao Paulo' },
+  { value: 'SE', label: 'SE - Sergipe' },
+  { value: 'TO', label: 'TO - Tocantins' },
+] as const;
+
 export const patientSearchFieldOptions: { value: PatientSearchField; label: string }[] = [
   { value: 'all', label: 'Todas as colunas' },
   { value: 'nome', label: 'Nome' },
@@ -25,16 +55,21 @@ export function buildPatientFormValues(patient?: Patient | null): PatientFormVal
 
   return {
     nome: patient?.nome ?? '',
-    cpf: patient?.cpf ?? '',
-    dataNascimento: patient?.data_nascimento ?? '',
+    cpf: maskCpfInput(patient?.cpf ?? ''),
+    dataNascimento: normalizeDateInputValue(patient?.data_nascimento),
     sexo: sexo === 'feminino' || sexo === 'masculino' || sexo === 'outro' ? sexo : '',
     groupId: patient?.group_id ? String(patient.group_id) : '',
-    telefone: patient?.telefone ?? '',
+    nomeResponsavel: patient?.nome_responsavel ?? '',
+    telefone: maskPhoneInput(patient?.telefone ?? ''),
     email: patient?.email ?? '',
-    endereco: patient?.endereco ?? '',
+    cep: maskCepInput(patient?.cep ?? ''),
+    estado: normalizeBrazilianState(patient?.estado),
+    cidade: patient?.cidade ?? '',
+    bairro: patient?.bairro ?? '',
+    rua: patient?.rua ?? '',
+    numero: patient?.numero ?? '',
+    complemento: patient?.complemento ?? '',
     observacoes: patient?.observacoes ?? '',
-    documentos: patient?.documentos ?? '',
-    historico: patient?.historico ?? '',
   };
 }
 
@@ -43,18 +78,35 @@ export function mapPatientFormToInput(values: PatientFormValues): PatientUpsertI
     throw new Error('Informe o sexo do paciente.');
   }
 
+  const telefone = unmaskDigits(values.telefone);
+  const email = values.email.trim();
+  const nomeResponsavel = values.nomeResponsavel.trim();
+  const cep = unmaskDigits(values.cep);
+  const estado = normalizeBrazilianState(values.estado);
+  const cidade = values.cidade.trim();
+  const bairro = values.bairro.trim();
+  const rua = values.rua.trim();
+  const numero = values.numero.trim();
+  const complemento = values.complemento.trim();
+  const observacoes = values.observacoes.trim();
+
   return {
     nome: values.nome.trim(),
     cpf: unmaskDigits(values.cpf),
     data_nascimento: values.dataNascimento,
     sexo: values.sexo,
     groupId: values.groupId ? Number(values.groupId) : undefined,
-    telefone: unmaskDigits(values.telefone),
-    email: values.email.trim(),
-    endereco: values.endereco.trim(),
-    observacoes: values.observacoes.trim(),
-    documentos: values.documentos.trim(),
-    historico: values.historico.trim(),
+    nome_responsavel: nomeResponsavel || undefined,
+    telefone: telefone || undefined,
+    email: email || undefined,
+    cep: cep || undefined,
+    estado: estado || undefined,
+    cidade: cidade || undefined,
+    bairro: bairro || undefined,
+    rua: rua || undefined,
+    numero: numero || undefined,
+    complemento: complemento || undefined,
+    observacoes: observacoes || undefined,
   };
 }
 
@@ -95,6 +147,15 @@ export function validatePatientForm(
 
   if (values.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) {
     return 'Informe um e-mail valido.';
+  }
+
+  const cep = unmaskDigits(values.cep);
+  if (cep && cep.length !== 8) {
+    return 'Informe um CEP valido com 8 digitos.';
+  }
+
+  if (values.estado && !isValidBrazilianState(values.estado)) {
+    return 'Selecione uma UF valida.';
   }
 
   return null;
@@ -153,6 +214,41 @@ export function formatPhone(value?: string | null): string {
   return value?.trim() || 'Nao informado';
 }
 
+export function formatCep(value?: string | null): string {
+  const digits = unmaskDigits(value);
+  if (!digits) {
+    return 'Nao informado';
+  }
+
+  if (digits.length === 8) {
+    return digits.replace(/(\d{5})(\d{3})/, '$1-$2');
+  }
+
+  return value?.trim() || 'Nao informado';
+}
+
+export function formatBrazilianState(value?: string | null): string {
+  const normalized = normalizeBrazilianState(value);
+  if (!normalized) {
+    return 'Nao informado';
+  }
+
+  const option = brazilianStateOptions.find((item) => item.value === normalized);
+  return option?.label ?? normalized;
+}
+
+export function formatPatientAddress(patient?: Patient | null): string {
+  if (!patient) {
+    return 'Nao informado';
+  }
+
+  const line = [patient.rua, patient.numero, patient.complemento].filter(Boolean).join(', ');
+  const district = [patient.bairro, patient.cidade, patient.estado].filter(Boolean).join(' - ');
+  const cep = patient.cep ? `CEP ${formatCep(patient.cep)}` : '';
+
+  return [line, district, cep].filter(Boolean).join(' | ') || 'Nao informado';
+}
+
 export function maskCpfInput(value: string): string {
   const digits = unmaskDigits(value).slice(0, 11);
 
@@ -169,6 +265,16 @@ export function maskCpfInput(value: string): string {
   }
 
   return digits.replace(/(\d{3})(\d{3})(\d{3})(\d+)/, '$1.$2.$3-$4');
+}
+
+export function maskCepInput(value: string): string {
+  const digits = unmaskDigits(value).slice(0, 8);
+
+  if (digits.length <= 5) {
+    return digits;
+  }
+
+  return digits.replace(/(\d{5})(\d+)/, '$1-$2');
 }
 
 export function maskPhoneInput(value: string): string {
@@ -195,12 +301,22 @@ export function getPatientSearchText(patient: Patient): string {
     patient.cpf,
     formatCpf(patient.cpf),
     patient.email,
+    patient.nome_responsavel,
     patient.telefone,
     formatPhone(patient.telefone),
     formatPatientSex(patient.sexo),
     patient.data_nascimento,
     formatDate(patient.data_nascimento),
     patient.group_nome,
+    patient.cep,
+    formatCep(patient.cep),
+    patient.estado,
+    patient.cidade,
+    patient.bairro,
+    patient.rua,
+    patient.numero,
+    patient.complemento,
+    formatPatientAddress(patient),
   ]
     .filter(Boolean)
     .join(' ')
@@ -252,6 +368,41 @@ export function getPatientAgeLabel(patient: Patient): string {
 
 function unmaskDigits(value?: string | null): string {
   return (value ?? '').replace(/\D/g, '');
+}
+
+function normalizeBrazilianState(value?: string | null): string {
+  const normalized = (value ?? '').trim().toUpperCase();
+  return isValidBrazilianState(normalized) ? normalized : normalized;
+}
+
+function isValidBrazilianState(value?: string | null): boolean {
+  if (!value) {
+    return false;
+  }
+
+  return brazilianStateOptions.some((item) => item.value === value.trim().toUpperCase());
+}
+
+function normalizeDateInputValue(value?: string | null): string {
+  if (!value) {
+    return '';
+  }
+
+  const trimmed = value.trim();
+  const isoDateMatch = trimmed.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (isoDateMatch) {
+    return isoDateMatch[1];
+  }
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) {
+    return '';
+  }
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, '0');
+  const day = String(parsed.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function getPatientSearchValue(patient: Patient, field: PatientSearchField): string {

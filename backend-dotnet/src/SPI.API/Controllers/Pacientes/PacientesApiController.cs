@@ -38,6 +38,13 @@ public sealed class PatientsController : ControllerBase
         var result = await _patientsAppService.UpdateAsync(id, request, User.GetUserId(), cancellationToken);
         return Ok(result);
     }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
+    {
+        await _patientsAppService.DeleteAsync(id, User.GetUserId(), cancellationToken);
+        return Ok(new { message = "Paciente excluido" });
+    }
 }
 
 

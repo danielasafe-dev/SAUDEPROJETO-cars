@@ -8,6 +8,7 @@ public interface IPatientRepository
     Task<List<Patient>> ListByGroupIdsAsync(IReadOnlyCollection<int> groupIds, CancellationToken cancellationToken = default);
     Task<Patient?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
     Task AddAsync(Patient patient, CancellationToken cancellationToken = default);
+    void Remove(Patient patient);
 }
 
 

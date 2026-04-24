@@ -11,6 +11,8 @@ using SPI.Domain.Repositories;
 using SPI.Domain.ValueObjects;
 using Microsoft.Extensions.Options;
 
+using SPI.Application.Config;
+
 namespace SPI.Application.Services;
 
 public sealed class AuthAppService : IAuthAppService

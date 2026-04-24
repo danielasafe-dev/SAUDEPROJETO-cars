@@ -5,6 +5,8 @@ using SPI.Application.Services.Access;
 using SPI.Domain.Enums;
 using SPI.Domain.Repositories;
 
+using SPI.Application.Config;
+
 namespace SPI.Application.Services;
 
 public sealed class GroupsAppService : IGroupsAppService
@@ -66,6 +68,8 @@ public sealed class GroupsAppService : IGroupsAppService
             throw new InvalidOperationException("O responsavel informado precisa ter perfil de gestor.");
         }
 
+        SystemGroupRules.EnsureNameIsAvailable(request.Nome);
+
         var group = new SPI.Domain.Entities.Group(request.Nome, gestor.Id);
         await _groupRepository.AddAsync(group, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -89,6 +93,8 @@ public sealed class GroupsAppService : IGroupsAppService
         var group = await _groupRepository.GetByIdAsync(groupId, cancellationToken)
             ?? throw new KeyNotFoundException("Grupo nao encontrado.");
 
+        SystemGroupRules.EnsureGroupCanBeManaged(group);
+
         if (actor.Role.HasManagerPrivileges() && group.GestorId != actor.Id)
         {
             throw new UnauthorizedAccessException("Perfil de gestao so pode alterar o proprio grupo.");
@@ -102,6 +108,15 @@ public sealed class GroupsAppService : IGroupsAppService
         {
             throw new InvalidOperationException("O responsavel informado precisa ter perfil de gestor.");
         }
+
+        var adminUser = await _userRepository
+            .GetByEmailAsync("admin@spi.com", cancellationToken);
+        if (adminUser is not null)
+        {
+            SystemGroupRules.EnsureManagerRemainsAdminForProtectedGroup(group, gestor.Id, adminUser.Id);
+        }
+
+        SystemGroupRules.EnsureNameIsAvailable(request.Nome);
 
         group.Update(request.Nome, gestor.Id);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -124,6 +139,8 @@ public sealed class GroupsAppService : IGroupsAppService
 
         var group = await _groupRepository.GetDetailedByIdAsync(groupId, cancellationToken)
             ?? throw new KeyNotFoundException("Grupo nao encontrado.");
+
+        SystemGroupRules.EnsureGroupCanBeDeleted(group);
 
         if (actor.Role.HasManagerPrivileges() && group.GestorId != actor.Id)
         {
