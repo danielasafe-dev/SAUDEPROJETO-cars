@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Eye, KeyRound, Pencil, Plus, UserX } from 'lucide-react';
 import {
   createUser,
   deactivateUser,
@@ -9,13 +9,14 @@ import {
   type CreateUserInput,
   type UpdateUserInput,
 } from '../api';
-import UsersTable from '../components/table/UsersTable';
 import UserCreateDialog from '../components/dialogs/UserCreateDialog';
 import UserDetailsDialog from '../components/dialogs/UserDetailsDialog';
 import UserEditDialog from '../components/dialogs/UserEditDialog';
 import UserDeactivateDialog from '../components/dialogs/UserDeactivateDialog';
 import UserPasswordInviteDialog from '../components/dialogs/UserPasswordInviteDialog';
 import type { User } from '@/types';
+import DataTable, { type Column } from '@/shared/components/table/DataTable';
+import { formatCreatedAt, formatRole, roleBadgeCls, statusBadgeCls } from '../components/utils/userUtils';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -68,6 +69,80 @@ export default function UsersPage() {
     await sendUserPasswordInvite(userId);
   };
 
+  const columns: Column<User>[] = [
+    {
+      header: 'Acoes',
+      render: (u) => (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setDetailsUser(u)}
+            className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            Visualizar
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditUser(u)}
+            className="inline-flex items-center gap-1 rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-50"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Editar
+          </button>
+          {u.ativo && (
+            <button
+              type="button"
+              onClick={() => setPasswordInviteTarget(u)}
+              className="inline-flex items-center gap-1 rounded-lg border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-700 transition hover:bg-amber-50"
+            >
+              <KeyRound className="h-3.5 w-3.5" />
+              Enviar senha
+            </button>
+          )}
+          {u.ativo && (
+            <button
+              type="button"
+              onClick={() => setDeactivateTarget(u)}
+              className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50"
+            >
+              <UserX className="h-3.5 w-3.5" />
+              Desativar
+            </button>
+          )}
+        </div>
+      ),
+    },
+    {
+      header: 'Nome',
+      render: (u) => <span className="font-medium text-gray-900">{u.nome}</span>,
+    },
+    {
+      header: 'E-mail',
+      render: (u) => <span className="text-gray-500">{u.email}</span>,
+    },
+    {
+      header: 'Perfil',
+      render: (u) => (
+        <span className={`rounded-full px-2 py-1 text-xs font-bold ${roleBadgeCls(u.role)}`}>
+          {formatRole(u.role)}
+        </span>
+      ),
+    },
+    {
+      header: 'Status',
+      render: (u) => (
+        <span className={`rounded-full px-2 py-1 text-xs font-bold ${statusBadgeCls(u.ativo)}`}>
+          {u.ativo ? 'Ativo' : 'Inativo'}
+        </span>
+      ),
+    },
+    {
+      header: 'Cadastro',
+      render: (u) => <span className="text-gray-500">{formatCreatedAt(u.criado_em)}</span>,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -97,20 +172,15 @@ export default function UsersPage() {
           Carregando usuarios...
         </div>
       ) : (
-        <UsersTable
-          users={users}
-          onView={setDetailsUser}
-          onEdit={setEditUser}
-          onSendInvite={setPasswordInviteTarget}
-          onDeactivate={setDeactivateTarget}
+        <DataTable
+          data={users}
+          columns={columns}
+          keyExtractor={(u) => u.id}
+          emptyMessage="Nenhum usuario cadastrado ate o momento."
         />
       )}
 
-      <UserCreateDialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onSubmit={handleCreate}
-      />
+      <UserCreateDialog open={createOpen} onClose={() => setCreateOpen(false)} onSubmit={handleCreate} />
       <UserDetailsDialog user={detailsUser} open={detailsUser !== null} onClose={() => setDetailsUser(null)} />
       <UserEditDialog user={editUser} open={editUser !== null} onClose={() => setEditUser(null)} onSubmit={handleEdit} />
       <UserPasswordInviteDialog

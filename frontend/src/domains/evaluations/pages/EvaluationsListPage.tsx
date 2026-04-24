@@ -4,6 +4,7 @@ import { getEvals } from '@/domains/dashboard/api';
 import type { Evaluation } from '@/types';
 import { Eye, Plus } from 'lucide-react';
 import EvaluationCreateDialog from '../components/EvaluationCreateDialog';
+import DataTable, { type Column } from '@/shared/components/table/DataTable';
 
 export default function EvaluationsListPage() {
   const navigate = useNavigate();
@@ -34,6 +35,42 @@ export default function EvaluationsListPage() {
     return 'bg-red-100 text-red-700';
   };
 
+  const columns: Column<Evaluation>[] = [
+    {
+      header: 'Ações',
+      render: (e) => (
+        <button
+          type="button"
+          onClick={() => navigate(`/avaliacoes/${e.id}`)}
+          className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
+        >
+          <Eye className="h-3.5 w-3.5" />
+          Visualizar
+        </button>
+      ),
+    },
+    {
+      header: 'Paciente',
+      render: (e) => <span className="font-medium text-gray-900">{e.patientNome}</span>,
+    },
+    {
+      header: 'Avaliador',
+      render: (e) => <span className="text-gray-500">{e.avaliadorNome}</span>,
+    },
+    {
+      header: 'Data',
+      render: (e) => <span className="text-gray-500">{new Date(e.dataAvaliacao).toLocaleDateString('pt-BR')}</span>,
+    },
+    {
+      header: 'Score',
+      render: (e) => (
+        <span className={`rounded-full px-2 py-1 text-xs font-bold ${badgeCls(e.scoreTotal)}`}>
+          {e.scoreTotal}/60
+        </span>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -57,49 +94,12 @@ export default function EvaluationsListPage() {
         className="w-full max-w-sm rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
       />
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <table className="w-full text-sm">
-          <thead className="border-b border-gray-200 bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">Paciente</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">Avaliador</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">Data</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">Score</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">Acoes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((e) => (
-              <tr key={e.id} className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="px-4 py-2 font-medium">{e.patientNome}</td>
-                <td className="px-4 py-2 text-gray-500">{e.avaliadorNome}</td>
-                <td className="px-4 py-2 text-gray-500">{new Date(e.dataAvaliacao).toLocaleDateString('pt-BR')}</td>
-                <td className="px-4 py-2">
-                  <span className={`rounded-full px-2 py-1 text-xs font-bold ${badgeCls(e.scoreTotal)}`}>
-                    {e.scoreTotal}/60
-                  </span>
-                </td>
-                <td className="px-4 py-2">
-                  <button
-                    onClick={() => navigate(`/avaliacoes/${e.id}`)}
-                    className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800"
-                  >
-                    <Eye className="h-3 w-3" />
-                    Visualizar
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
-                  Nenhuma avaliacao encontrada
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        data={filtered}
+        columns={columns}
+        keyExtractor={(e) => e.id}
+        emptyMessage="Nenhuma avaliação encontrada."
+      />
 
       <EvaluationCreateDialog open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>

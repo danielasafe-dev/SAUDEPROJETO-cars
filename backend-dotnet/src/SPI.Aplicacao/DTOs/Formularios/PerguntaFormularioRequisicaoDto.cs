@@ -8,7 +8,7 @@ public sealed class FormQuestionRequestDto
     [MaxLength(1000)]
     public string Texto { get; init; } = string.Empty;
 
-    [Range(typeof(decimal), "0.01", "999999")]
+    [Range(0.01, 999999)]
     public decimal Peso { get; init; }
 
     [Range(1, int.MaxValue)]
