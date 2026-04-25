@@ -68,7 +68,7 @@ public static class FrontendDevServerExtensions
                 ? new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
-                    Arguments = $"/c npm run dev -- --host localhost --port {frontendPort}",
+                    Arguments = $"/c npx vite --host localhost --port {frontendPort}",
                     WorkingDirectory = frontendPath,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
@@ -78,7 +78,7 @@ public static class FrontendDevServerExtensions
                 : new ProcessStartInfo
                 {
                     FileName = "/bin/sh",
-                    Arguments = $"-lc \"npm run dev -- --host localhost --port {frontendPort}\"",
+                    Arguments = $"-lc \"npx vite --host localhost --port {frontendPort}\"",
                     WorkingDirectory = frontendPath,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
