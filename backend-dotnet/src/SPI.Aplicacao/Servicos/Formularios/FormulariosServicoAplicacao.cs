@@ -37,9 +37,19 @@ public sealed class FormsAppService : IFormsAppService
         }
 
         var accessScope = AccessScopeResolver.Resolve(actor);
-        var forms = actor.Role == UserRole.Analyst
-            ? await _formRepository.ListAsync(cancellationToken)
-            : await _formRepository.ListByGroupIdsAsync(accessScope.OperationalGroupIds, cancellationToken);
+        List<SPI.Domain.Entities.FormTemplate> forms;
+        if (actor.Role == UserRole.Analyst)
+        {
+            forms = await _formRepository.ListAsync(cancellationToken);
+        }
+        else if (accessScope.IsAdmin && accessScope.OrganizationId.HasValue)
+        {
+            forms = await _formRepository.ListByOrganizationIdAsync(accessScope.OrganizationId.Value, cancellationToken);
+        }
+        else
+        {
+            forms = await _formRepository.ListByGroupIdsAsync(accessScope.OperationalGroupIds, cancellationToken);
+        }
 
         return forms.Select(x => x.ToDto()).ToList();
     }
@@ -90,6 +100,11 @@ public sealed class FormsAppService : IFormsAppService
             request.GroupId,
             request.Perguntas.Select(x => (x.Texto, x.Peso, x.Ordem)));
 
+        if (actor.Role == UserRole.Admin && actor.OrganizationId.HasValue)
+        {
+            form.AssignOrganization(actor.OrganizationId.Value);
+        }
+
         await _formRepository.AddAsync(form, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -138,13 +153,13 @@ public sealed class FormsAppService : IFormsAppService
 
     private static void ValidateFormGroupAccess(UserRole role, int? groupId, AccessScope accessScope)
     {
+        if (accessScope.IsAdmin)
+        {
+            return;
+        }
+
         if (groupId is null)
         {
-            if (role == UserRole.Admin)
-            {
-                return;
-            }
-
             throw new UnauthorizedAccessException("Somente administradores podem criar formularios globais.");
         }
 
@@ -160,7 +175,7 @@ public sealed class FormsAppService : IFormsAppService
 
     private static void EnsureCanAccessForm(SPI.Domain.Entities.User actor, int? groupId)
     {
-        if (actor.Role == UserRole.Analyst || groupId is null)
+        if (actor.Role == UserRole.Analyst || actor.Role == UserRole.Admin || groupId is null)
         {
             return;
         }

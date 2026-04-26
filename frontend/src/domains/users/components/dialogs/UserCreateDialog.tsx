@@ -3,12 +3,15 @@ import Dialog from '@/shared/components/dialog/Dialog';
 import UserFormFields, { type UserFormValues } from '../forms/UserFormFields';
 import type { CreateUserInput } from '../../api';
 import type { Group } from '@/domains/groups/types';
+import type { UserRole } from '@/types';
 
 interface UserCreateDialogProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: CreateUserInput) => Promise<void>;
   groups?: Group[];
+  singleGroupSelect?: boolean;
+  excludeRoles?: UserRole[];
 }
 
 const initialValues: UserFormValues = {
@@ -24,6 +27,8 @@ export default function UserCreateDialog({
   onClose,
   onSubmit,
   groups = [],
+  singleGroupSelect = false,
+  excludeRoles = [],
 }: UserCreateDialogProps) {
   const [values, setValues] = useState<UserFormValues>(initialValues);
   const [loading, setLoading] = useState(false);
@@ -114,6 +119,8 @@ export default function UserCreateDialog({
           onChange={handleChange}
           onGroupIdsChange={handleGroupIdsChange}
           groups={groups}
+          singleGroupSelect={singleGroupSelect}
+          excludeRoles={excludeRoles}
           disabled={loading}
           emailHint="Os dois campos de e-mail precisam ser iguais. A definicao da senha ficara para o fluxo de convite por e-mail."
         />

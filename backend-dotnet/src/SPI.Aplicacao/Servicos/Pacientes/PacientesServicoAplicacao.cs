@@ -42,7 +42,15 @@ public sealed class PatientsAppService : IPatientsAppService
         }
 
         var accessScope = AccessScopeResolver.Resolve(actor);
-        var patients = await _patientRepository.ListByGroupIdsAsync(accessScope.OperationalGroupIds, cancellationToken);
+        List<SPI.Domain.Entities.Patient> patients;
+        if (accessScope.IsAdmin && accessScope.OrganizationId.HasValue)
+        {
+            patients = await _patientRepository.ListByOrganizationIdAsync(accessScope.OrganizationId.Value, cancellationToken);
+        }
+        else
+        {
+            patients = await _patientRepository.ListByGroupIdsAsync(accessScope.OperationalGroupIds, cancellationToken);
+        }
 
         return patients.Select(x => x.ToDto()).ToList();
     }
@@ -80,6 +88,11 @@ public sealed class PatientsAppService : IPatientsAppService
             request.Observacoes,
             actorUserId,
             group.Id);
+        if (accessScope.IsAdmin && accessScope.OrganizationId.HasValue)
+        {
+            patient.AssignOrganization(accessScope.OrganizationId.Value);
+        }
+
         await _patientRepository.AddAsync(patient, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -103,7 +116,7 @@ public sealed class PatientsAppService : IPatientsAppService
             ?? throw new KeyNotFoundException("Paciente nao encontrado.");
 
         var accessScope = AccessScopeResolver.Resolve(actor);
-        if (!accessScope.OperationalGroupIds.Contains(patient.GroupId))
+        if (!accessScope.IsAdmin && !accessScope.OperationalGroupIds.Contains(patient.GroupId))
         {
             throw new UnauthorizedAccessException("Usuario sem permissao para editar este paciente.");
         }
@@ -166,7 +179,7 @@ public sealed class PatientsAppService : IPatientsAppService
     {
         if (requestGroupId.HasValue && requestGroupId.Value > 0)
         {
-            if (!accessScope.OperationalGroupIds.Contains(requestGroupId.Value))
+            if (!accessScope.IsAdmin && !accessScope.OperationalGroupIds.Contains(requestGroupId.Value))
             {
                 throw new UnauthorizedAccessException("Usuario sem permissao para operar neste grupo.");
             }
@@ -189,7 +202,7 @@ public sealed class PatientsAppService : IPatientsAppService
             return ResolveGroupId(requestGroupId, actorRole, accessScope);
         }
 
-        if (!accessScope.OperationalGroupIds.Contains(currentGroupId))
+        if (!accessScope.IsAdmin && !accessScope.OperationalGroupIds.Contains(currentGroupId))
         {
             throw new UnauthorizedAccessException("Usuario sem permissao para operar neste grupo.");
         }

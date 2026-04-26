@@ -11,14 +11,13 @@ using SPI.Domain.Repositories;
 using SPI.Domain.ValueObjects;
 using Microsoft.Extensions.Options;
 
-using SPI.Application.Config;
-
 namespace SPI.Application.Services;
 
 public sealed class AuthAppService : IAuthAppService
 {
     private readonly IUserRepository _userRepository;
     private readonly IGroupRepository _groupRepository;
+    private readonly IGroupsAppService _groupsAppService;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenService _tokenService;
     private readonly IPasswordInviteTokenService _passwordInviteTokenService;
@@ -29,6 +28,7 @@ public sealed class AuthAppService : IAuthAppService
     public AuthAppService(
         IUserRepository userRepository,
         IGroupRepository groupRepository,
+        IGroupsAppService groupsAppService,
         IPasswordHasher passwordHasher,
         ITokenService tokenService,
         IPasswordInviteTokenService passwordInviteTokenService,
@@ -38,6 +38,7 @@ public sealed class AuthAppService : IAuthAppService
     {
         _userRepository = userRepository;
         _groupRepository = groupRepository;
+        _groupsAppService = groupsAppService;
         _passwordHasher = passwordHasher;
         _tokenService = tokenService;
         _passwordInviteTokenService = passwordInviteTokenService;
@@ -115,27 +116,27 @@ public sealed class AuthAppService : IAuthAppService
             .Where(x => x > 0)
             .Distinct()
             .OrderBy(x => x)
+            .ToList();
+
+        var finalGroupIds = requestedGroupIds
+            .OrderBy(x => x)
             .ToArray();
 
-        if (targetRole == UserRole.Analyst && requestedGroupIds.Length > 0)
+        if (targetRole == UserRole.Analyst && finalGroupIds.Length > 0)
         {
             throw new UnauthorizedAccessException("Analistas nao podem ser vinculados a grupos.");
         }
 
-        if (actor.Role == UserRole.Admin && targetRole != UserRole.Analyst && requestedGroupIds.Any(x => !accessScope.OperationalGroupIds.Contains(x)))
-        {
-            throw new UnauthorizedAccessException("Administrador so pode vincular usuarios aos grupos aos quais esta vinculado.");
-        }
 
-        if (actor.Role.HasManagerPrivileges() && requestedGroupIds.Any(x => !accessScope.ManagedGroupIds.Contains(x)))
+        if (actor.Role.HasManagerPrivileges() && finalGroupIds.Any(x => !accessScope.ManagedGroupIds.Contains(x)))
         {
             throw new UnauthorizedAccessException("Perfil de gestao so pode vincular usuarios aos grupos que gerencia.");
         }
 
-        if (requestedGroupIds.Length > 0)
+        if (finalGroupIds.Length > 0)
         {
-            var groups = await _groupRepository.ListByIdsAsync(requestedGroupIds, cancellationToken);
-            if (groups.Count != requestedGroupIds.Length)
+            var groups = await _groupRepository.ListByIdsAsync(finalGroupIds, cancellationToken);
+            if (groups.Count != finalGroupIds.Length)
             {
                 throw new KeyNotFoundException("Um ou mais grupos informados nao existem.");
             }
@@ -152,13 +153,27 @@ public sealed class AuthAppService : IAuthAppService
             initialPasswordHash,
             targetRole);
 
+        if (actor.Role == UserRole.Admin && actor.OrganizationId.HasValue)
+        {
+            user.AssignOrganization(actor.OrganizationId.Value);
+        }
+
         await _userRepository.AddAsync(user, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        if (requestedGroupIds.Length > 0)
+        if (finalGroupIds.Length > 0)
         {
-            await _userRepository.ReplaceGroupMembershipsAsync(user.Id, requestedGroupIds, cancellationToken);
+            await _userRepository.ReplaceGroupMembershipsAsync(user.Id, finalGroupIds, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        if (targetRole == UserRole.Manager && actor.Role == UserRole.Admin)
+        {
+            var selectedGroupId = request.GroupIds.Where(x => x > 0).FirstOrDefault();
+            if (selectedGroupId > 0)
+            {
+                await _groupsAppService.AssignManagerAsync(selectedGroupId, user.Id, cancellationToken);
+            }
         }
 
         var createdUser = await _userRepository.GetDetailedByIdAsync(user.Id, cancellationToken)
@@ -246,9 +261,9 @@ public sealed class AuthAppService : IAuthAppService
         var accessScope = AccessScopeResolver.Resolve(actor);
         var targetGroupIds = targetUser.GroupMemberships.Select(x => x.GroupId).Distinct().ToArray();
 
-        if (actor.Role == UserRole.Admin && targetUser.Role != UserRole.Analyst && targetGroupIds.Any(x => !accessScope.OperationalGroupIds.Contains(x)))
+        if (actor.Role == UserRole.Admin)
         {
-            throw new UnauthorizedAccessException("Administrador so pode gerenciar usuarios dos grupos aos quais esta vinculado.");
+            return;
         }
 
         if (!actor.Role.HasManagerPrivileges())

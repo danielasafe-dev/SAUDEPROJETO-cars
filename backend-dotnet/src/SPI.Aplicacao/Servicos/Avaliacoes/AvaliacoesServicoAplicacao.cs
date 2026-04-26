@@ -39,7 +39,15 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
         }
 
         var accessScope = AccessScopeResolver.Resolve(actor);
-        var evaluations = await _evaluationRepository.ListDetailedByGroupIdsAsync(accessScope.OperationalGroupIds, cancellationToken);
+        List<SPI.Domain.ReadModels.EvaluationDetails> evaluations;
+        if (accessScope.IsAdmin && accessScope.OrganizationId.HasValue)
+        {
+            evaluations = await _evaluationRepository.ListDetailedByOrganizationIdAsync(accessScope.OrganizationId.Value, cancellationToken);
+        }
+        else
+        {
+            evaluations = await _evaluationRepository.ListDetailedByGroupIdsAsync(accessScope.OperationalGroupIds, cancellationToken);
+        }
 
         return evaluations.Select(x => x.ToDto()).ToList();
     }
@@ -97,6 +105,11 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
         else
         {
             evaluation = new Evaluation(patient.Id, actorUserId, patient.GroupId, request.Respostas);
+        }
+
+        if (actor.Role == UserRole.Admin && actor.OrganizationId.HasValue)
+        {
+            evaluation.AssignOrganization(actor.OrganizationId.Value);
         }
 
         await _evaluationRepository.AddAsync(evaluation, cancellationToken);
@@ -179,6 +192,11 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
     private static void EnsureCanAccessGroup(User actor, int groupId, bool allowManagedOnly)
     {
         var accessScope = AccessScopeResolver.Resolve(actor);
+        if (accessScope.IsAdmin)
+        {
+            return;
+        }
+
         var allowedGroupIds = allowManagedOnly
             ? accessScope.ManagedGroupIds
             : accessScope.OperationalGroupIds;

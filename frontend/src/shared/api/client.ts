@@ -54,10 +54,11 @@ api.interceptors.response.use(
     const requestUrl = String(err.config?.url ?? '');
     const isAuthRequest =
       requestUrl.includes('/api/auth/login') ||
-      requestUrl.includes('/api/auth/set-password');
+      requestUrl.includes('/api/auth/set-password') ||
+      requestUrl.includes('/password-invite');
 
-    if (err.response?.status === 401 && !isAuthRequest) {
-      localStorage.removeItem('token');
+    const hasToken = Boolean(localStorage.getItem('token'));
+    if (err.response?.status === 401 && !isAuthRequest && !hasToken) {
       localStorage.removeItem('user');
       if (window.location.pathname !== '/login') {
         window.location.replace('/login');

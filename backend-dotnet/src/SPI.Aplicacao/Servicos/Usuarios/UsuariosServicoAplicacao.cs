@@ -5,20 +5,20 @@ using SPI.Application.Services.Access;
 using SPI.Domain.Enums;
 using SPI.Domain.Repositories;
 
-using SPI.Application.Config;
-
 namespace SPI.Application.Services;
 
 public sealed class UsersAppService : IUsersAppService
 {
     private readonly IUserRepository _userRepository;
     private readonly IGroupRepository _groupRepository;
+    private readonly IGroupsAppService _groupsAppService;
     private readonly IUnitOfWork _unitOfWork;
 
-    public UsersAppService(IUserRepository userRepository, IGroupRepository groupRepository, IUnitOfWork unitOfWork)
+    public UsersAppService(IUserRepository userRepository, IGroupRepository groupRepository, IGroupsAppService groupsAppService, IUnitOfWork unitOfWork)
     {
         _userRepository = userRepository;
         _groupRepository = groupRepository;
+        _groupsAppService = groupsAppService;
         _unitOfWork = unitOfWork;
     }
 
@@ -36,18 +36,12 @@ public sealed class UsersAppService : IUsersAppService
         IReadOnlyCollection<SPI.Domain.Entities.User> users;
         if (actor.Role == UserRole.Admin)
         {
-            var allUsers = await _userRepository.ListAsync(cancellationToken);
-            users = allUsers
-                .Where(x =>
-                    x.Id == actor.Id ||
-                    x.Role == UserRole.Analyst ||
-                    x.GroupMemberships.Any(m => accessScope.OperationalGroupIds.Contains(m.GroupId)) ||
-                    x.ManagedGroups.Any(g => accessScope.OperationalGroupIds.Contains(g.Id)))
-                .ToArray();
+            users = await _userRepository.ListAsync(cancellationToken);
         }
         else
         {
-            users = await _userRepository.ListByGroupIdsAsync(accessScope.ManagedGroupIds, cancellationToken);
+            var allInScope = await _userRepository.ListByGroupIdsAsync(accessScope.ManagedGroupIds, cancellationToken);
+            users = allInScope.Where(u => u.Role != UserRole.Admin).ToArray();
         }
 
         return users.Select(x => x.ToDto()).ToList();
@@ -107,14 +101,17 @@ public sealed class UsersAppService : IUsersAppService
         var user = await _userRepository.GetDetailedByIdAsync(userId, cancellationToken)
             ?? throw new KeyNotFoundException("Usuario nao encontrado.");
 
-        var requestedGroupIds = request.GroupIds
-            .Where(x => x > 0)
-            .Distinct()
+        var allRequestedGroups = await _groupRepository.ListByIdsAsync(
+            request.GroupIds.Where(x => x > 0).Distinct().ToArray(),
+            cancellationToken);
+
+        var requestedGroupIds = allRequestedGroups
+            .Select(g => g.Id)
             .OrderBy(x => x)
             .ToArray();
 
-        var groups = await _groupRepository.ListByIdsAsync(requestedGroupIds, cancellationToken);
-        if (groups.Count != requestedGroupIds.Length)
+        var validCount = request.GroupIds.Where(x => x > 0).Distinct().Count();
+        if (allRequestedGroups.Count != validCount)
         {
             throw new KeyNotFoundException("Um ou mais grupos informados nao existem.");
         }
@@ -124,14 +121,6 @@ public sealed class UsersAppService : IUsersAppService
             throw new UnauthorizedAccessException("Analistas nao podem ser vinculados a grupos.");
         }
 
-        if (actor.Role == UserRole.Admin)
-        {
-            var accessScope = AccessScopeResolver.Resolve(actor);
-            if (requestedGroupIds.Any(x => !accessScope.OperationalGroupIds.Contains(x)))
-            {
-                throw new UnauthorizedAccessException("Administrador so pode vincular usuarios aos grupos aos quais esta vinculado.");
-            }
-        }
 
         if (actor.Role.HasManagerPrivileges())
         {
@@ -155,6 +144,18 @@ public sealed class UsersAppService : IUsersAppService
 
         await _userRepository.ReplaceGroupMembershipsAsync(userId, requestedGroupIds, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (actor.Role == UserRole.Admin && user.Role == UserRole.Manager)
+        {
+            var adminScope = AccessScopeResolver.Resolve(actor);
+            var selectedGroupId = requestedGroupIds
+                .FirstOrDefault(x => adminScope.OperationalGroupIds.Contains(x));
+
+            if (selectedGroupId > 0)
+            {
+                await _groupsAppService.AssignManagerAsync(selectedGroupId, user.Id, cancellationToken);
+            }
+        }
     }
 }
 
