@@ -2,7 +2,126 @@ import { isMockMode } from '@/shared/api/client';
 import { mockEvaluations as evals } from '@/shared/api/mockData';
 import type { Evaluation } from '@/types';
 
-export async function getDashboardStats() {
+export interface DashboardDistributionItem {
+  label: string;
+  value: number;
+}
+
+export interface SpiMockSusTriage {
+  idPaciente: string;
+  nomeCrianca: string;
+  idadeAnos: number | null;
+  sexo: string;
+  dataTriagem: string | null;
+  scoreTriagem: number | null;
+  nivelRisco: string;
+  encaminhado: boolean;
+  statusConsulta: string;
+  diagnosticoConfirmado: string;
+}
+
+export interface SpiMockSusDashboard {
+  fonte: string;
+  aba: string;
+  atualizadoEm: string;
+  totalPacientes: number;
+  totalTriagens: number;
+  triagensMesAtual: number;
+  scoreMedio: number;
+  menorScore: number;
+  maiorScore: number;
+  encaminhados: number;
+  consultasAgendadas: number;
+  consultasRealizadas: number;
+  consultasCanceladas: number;
+  diagnosticosConfirmados: number;
+  tratamentosIniciados: number;
+  casosSeveros: number;
+  tempoMedioEsperaDias: number;
+  tempoMedioIntervencaoDias: number;
+  consultasEvitadas: number;
+  economiaFinanceiraEstimada: number;
+  custoMedioConsultaEspecializada: number;
+  taxaEncaminhamento: number;
+  taxaComparecimento: number;
+  taxaDiagnosticoConfirmado: number;
+  taxaEncaminhamentoAssertivo: number;
+  taxaTratamentoAposDiagnostico: number;
+  periodoTriagens: {
+    inicio: string | null;
+    fim: string | null;
+  };
+  distribuicaoTriagensMensais: DashboardDistributionItem[];
+  distribuicaoRisco: DashboardDistributionItem[];
+  distribuicaoStatusConsulta: DashboardDistributionItem[];
+  distribuicaoEspecialista: DashboardDistributionItem[];
+  distribuicaoDiagnostico: DashboardDistributionItem[];
+  distribuicaoTratamento: DashboardDistributionItem[];
+  ultimasTriagens: SpiMockSusTriage[];
+}
+
+export async function getDashboardStats(): Promise<SpiMockSusDashboard> {
+  if (!isMockMode()) {
+    return (await import('@/shared/api/client')).api.get('/api/dashboard/spi-mock').then((r) => r.data);
+  }
+
+  const avg = evals.reduce((s, e) => s + e.scoreTotal, 0) / (evals.length || 1);
+  const severe = evals.filter((e) => e.scoreTotal >= 37).length;
+
+  return {
+    fonte: 'mockData.ts',
+    aba: 'avaliacoes',
+    atualizadoEm: new Date().toISOString(),
+    totalPacientes: new Set(evals.map((e) => e.patientId)).size,
+    totalTriagens: evals.length,
+    triagensMesAtual: 2,
+    scoreMedio: Math.round(avg * 10) / 10,
+    menorScore: Math.min(...evals.map((e) => e.scoreTotal)),
+    maiorScore: Math.max(...evals.map((e) => e.scoreTotal)),
+    encaminhados: evals.filter((e) => e.scoreTotal > 29.5).length,
+    consultasAgendadas: 0,
+    consultasRealizadas: 0,
+    consultasCanceladas: 0,
+    diagnosticosConfirmados: severe,
+    tratamentosIniciados: 0,
+    casosSeveros: severe,
+    tempoMedioEsperaDias: 0,
+    tempoMedioIntervencaoDias: 0,
+    consultasEvitadas: 0,
+    economiaFinanceiraEstimada: 0,
+    custoMedioConsultaEspecializada: 1000,
+    taxaEncaminhamento: 0,
+    taxaComparecimento: 0,
+    taxaDiagnosticoConfirmado: 0,
+    taxaEncaminhamentoAssertivo: 0,
+    taxaTratamentoAposDiagnostico: 0,
+    periodoTriagens: { inicio: null, fim: null },
+    distribuicaoTriagensMensais: [],
+    distribuicaoRisco: [
+      { label: 'Sem sinais', value: evals.filter((e) => e.scoreTotal <= 29.5).length },
+      { label: 'Leve/Moderado', value: evals.filter((e) => e.scoreTotal > 29.5 && e.scoreTotal < 37).length },
+      { label: 'Severo', value: severe },
+    ],
+    distribuicaoStatusConsulta: [],
+    distribuicaoEspecialista: [],
+    distribuicaoDiagnostico: [],
+    distribuicaoTratamento: [],
+    ultimasTriagens: evals.slice(-6).reverse().map((e) => ({
+      idPaciente: String(e.patientId),
+      nomeCrianca: e.patientNome,
+      idadeAnos: null,
+      sexo: '',
+      dataTriagem: e.dataAvaliacao,
+      scoreTriagem: e.scoreTotal,
+      nivelRisco: e.classificacao,
+      encaminhado: e.scoreTotal > 29.5,
+      statusConsulta: 'Sem consulta',
+      diagnosticoConfirmado: 'Pendente',
+    })),
+  };
+}
+
+export async function getEvaluationDashboardStats() {
   if (isMockMode()) {
     await new Promise((r) => setTimeout(r, 300));
     const avg = evals.reduce((s, e) => s + e.scoreTotal, 0) / (evals.length || 1);
