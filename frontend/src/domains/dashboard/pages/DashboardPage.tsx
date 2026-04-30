@@ -5,12 +5,8 @@ import {
   CalendarDays,
   CheckCircle2,
   ClipboardList,
-  HeartPulse,
   Route,
-  ShieldCheck,
   Sparkles,
-  Stethoscope,
-  Timer,
   TrendingUp,
 } from 'lucide-react';
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -18,7 +14,6 @@ import { getDashboardStats, type DashboardDistributionItem, type SpiMockSusDashb
 import StatsCards from '../components/StatsCards';
 
 const riskColors = ['#ef4444', '#f59e0b', '#5ba4e6', '#22c55e'];
-const statusColors = ['#22c55e', '#2272c3', '#94a3b8', '#ef4444'];
 const palette = ['#2272c3', '#5ba4e6', '#7c3aed', '#f59e0b', '#22c55e', '#ef4444', '#94a3b8'];
 
 function formatDate(date: string | null) {
@@ -104,19 +99,13 @@ export default function DashboardPage() {
 
       <SectionTitle title="Encaminhamentos" tone="purple" />
       <StatsCards
-        columnsClassName="grid-cols-1 md:grid-cols-3"
+        columnsClassName="grid-cols-1"
         items={[
           { icon: Route, label: 'Total encaminhadas', value: stats.encaminhados, tone: 'blue', tag: 'KPI 07', foot: `${formatPercent(stats.taxaEncaminhamento)} das triadas` },
-          { icon: ShieldCheck, label: 'Encaminhamento assertivo', value: formatPercent(stats.taxaEncaminhamentoAssertivo), tone: 'green', tag: 'KPI 08', foot: 'diagnóstico confirmado após consulta' },
-          { icon: Timer, label: 'Tempo triagem → consulta', value: `${stats.tempoMedioEsperaDias.toFixed(0)} dias`, tone: 'red', tag: 'KPI 09', foot: 'meta de referência: < 30 dias' },
         ]}
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_1fr] gap-5">
-        <ChartCard title="Status das consultas especializadas" subtitle={`Situação atual das ${stats.encaminhados} crianças encaminhadas`}>
-          <DistributionDonut data={stats.distribuicaoStatusConsulta} colors={statusColors} />
-        </ChartCard>
-
+      <div className="grid grid-cols-1 gap-5">
         <ChartCard title="Destino do encaminhamento" subtitle="Especialidades demandadas pela triagem">
           <HorizontalBars data={stats.distribuicaoEspecialista} />
         </ChartCard>
@@ -139,26 +128,6 @@ export default function DashboardPage() {
           detail="Estimativa conservadora para demonstrar o efeito da triagem como filtro."
           tone="green"
         />
-      </div>
-
-      <SectionTitle title="Resultado Assistencial" tone="purple" />
-      <StatsCards
-        columnsClassName="grid-cols-1 md:grid-cols-3"
-        items={[
-          { icon: Stethoscope, label: 'Diagnósticos confirmados', value: stats.diagnosticosConfirmados, tone: 'blue', tag: 'KPI 12', foot: `${formatPercent(stats.taxaDiagnosticoConfirmado)} das consultas realizadas` },
-          { icon: Timer, label: 'Tempo até intervenção', value: `${stats.tempoMedioIntervencaoDias.toFixed(0)} dias`, tone: 'red', tag: 'KPI 13', foot: 'triagem até início de tratamento' },
-          { icon: HeartPulse, label: 'Acompanhamento ativo', value: stats.tratamentosIniciados, tone: 'green', tag: 'KPI 14', foot: `${formatPercent(stats.taxaTratamentoAposDiagnostico)} após diagnóstico` },
-        ]}
-      />
-
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        <ChartCard title="Tipos de diagnóstico confirmado" subtitle="Distribuição dos diagnósticos informados na base">
-          <DistributionList data={stats.distribuicaoDiagnostico} colors={palette} />
-        </ChartCard>
-
-        <ChartCard title="Tipos de tratamento iniciado" subtitle="Tratamentos associados aos acompanhamentos ativos">
-          <DistributionList data={stats.distribuicaoTratamento} colors={palette} />
-        </ChartCard>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-4">

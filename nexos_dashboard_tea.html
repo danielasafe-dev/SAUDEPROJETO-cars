@@ -913,7 +913,7 @@
       <hr>
     </div>
 
-    <div class="grid-kpi" style="grid-template-columns:repeat(3,1fr);">
+    <div class="grid-kpi" style="grid-template-columns:repeat(1,1fr);">
       <!-- KPI 7 -->
       <div class="kpi-card c-blue">
         <div class="kpi-top">
@@ -928,67 +928,6 @@
         </div>
       </div>
 
-      <!-- KPI 8 -->
-      <div class="kpi-card c-green">
-        <div class="kpi-top">
-          <div class="kpi-icon-box ib-green">🎯</div>
-          <span class="kpi-tag t-green">KPI 08</span>
-        </div>
-        <div class="kpi-label">Taxa Encaminhamento Assertivo</div>
-        <div class="kpi-value">76,2<span class="unit">%</span></div>
-        <div class="kpi-foot">
-          <span>Diagnóstico confirmado</span>
-          <span class="delta good">↑ precisão alta</span>
-        </div>
-      </div>
-
-      <!-- KPI 9 -->
-      <div class="kpi-card c-red">
-        <div class="kpi-top">
-          <div class="kpi-icon-box ib-red">⏳</div>
-          <span class="kpi-tag t-red">KPI 09</span>
-        </div>
-        <div class="kpi-label">Tempo Médio Triagem → Consulta</div>
-        <div class="kpi-value" style="color:var(--red);">88 <span class="unit">dias</span></div>
-        <div class="kpi-foot">
-          <span class="delta bad">⚠ meta: &lt; 30 dias</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Status consultas -->
-    <div style="margin-top:14px;">
-      <div class="chart-card">
-        <div class="chart-card-title">Status das Consultas Especializadas</div>
-        <div class="chart-card-sub">Situação atual das 466 crianças encaminhadas</div>
-        <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
-          <div class="chart-wrap" style="height:180px;width:180px;flex-shrink:0;">
-            <canvas id="chartStatus"></canvas>
-          </div>
-          <div class="status-list" style="flex:1;min-width:200px;">
-            <div class="status-item">
-              <div class="status-left"><div class="status-dot" style="background:#22c55e;"></div><span class="status-nm">Realizada</span></div>
-              <span class="status-pct">40%</span>
-              <span class="status-n" style="color:#16a34a;">186</span>
-            </div>
-            <div class="status-item">
-              <div class="status-left"><div class="status-dot" style="background:var(--blue-mid);"></div><span class="status-nm">Agendada</span></div>
-              <span class="status-pct">25%</span>
-              <span class="status-n" style="color:var(--blue-dark);">117</span>
-            </div>
-            <div class="status-item">
-              <div class="status-left"><div class="status-dot" style="background:var(--text-light);"></div><span class="status-nm">Aguardando</span></div>
-              <span class="status-pct">20%</span>
-              <span class="status-n" style="color:var(--text-muted);">93</span>
-            </div>
-            <div class="status-item">
-              <div class="status-left"><div class="status-dot" style="background:var(--red);"></div><span class="status-nm">Cancelada</span></div>
-              <span class="status-pct">15%</span>
-              <span class="status-n" style="color:var(--red);">70</span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- ── SEÇÃO 4: ECONOMIA ── -->
@@ -1063,94 +1002,7 @@
       </div>
     </div>
 
-    <!-- ── SEÇÃO 5: RESULTADO ASSISTENCIAL ── -->
-    <div class="section-hdr">
-      <div class="section-pill" style="background:var(--purple-pale);color:#5b21b6;">🧩 Resultado Assistencial</div>
-      <hr>
-    </div>
-
-    <div class="grid-kpi" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px;">
-      <!-- KPI 12 -->
-      <div class="kpi-card c-blue">
-        <div class="kpi-top">
-          <div class="kpi-icon-box ib-blue">🧩</div>
-          <span class="kpi-tag t-blue">KPI 12</span>
-        </div>
-        <div class="kpi-label">Diagnósticos Confirmados</div>
-        <div class="kpi-value">109</div>
-        <div class="kpi-foot">
-          <span>58,6% das consultas realizadas</span>
-          <span class="delta info">de 186 realizadas</span>
-        </div>
-      </div>
-
-      <!-- KPI 13 -->
-      <div class="kpi-card c-red">
-        <div class="kpi-top">
-          <div class="kpi-icon-box ib-red">🕐</div>
-          <span class="kpi-tag t-red">KPI 13</span>
-        </div>
-        <div class="kpi-label">Tempo Médio até Intervenção</div>
-        <div class="kpi-value" style="color:var(--red);">96 <span class="unit">dias</span></div>
-        <div class="kpi-foot">
-          <span>Triagem → início tratamento</span>
-          <span class="delta bad">meta: &lt; 45 dias</span>
-        </div>
-      </div>
-
-      <!-- KPI 14 -->
-      <div class="kpi-card c-green">
-        <div class="kpi-top">
-          <div class="kpi-icon-box ib-green">💚</div>
-          <span class="kpi-tag t-green">KPI 14</span>
-        </div>
-        <div class="kpi-label">Crianças em Acompanhamento Ativo</div>
-        <div class="kpi-value" style="color:var(--green);">96</div>
-        <div class="kpi-foot">
-          <span>Iniciaram tratamento</span>
-          <span class="delta good">↑ 88% adesão</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Diagnósticos + Tratamentos -->
     <div class="grid-chart-2">
-      <div class="chart-card">
-        <div class="chart-card-title">Tipos de Diagnóstico Confirmado</div>
-        <div class="chart-card-sub">Distribuição entre as 109 crianças diagnosticadas</div>
-        <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
-          <div class="chart-wrap" style="height:180px;width:180px;flex-shrink:0;">
-            <canvas id="chartDiag"></canvas>
-          </div>
-          <div style="flex:1;min-width:160px;">
-            <div class="diag-row">
-              <div class="diag-left"><div class="diag-dot" style="background:var(--blue-light);"></div>Atraso de Linguagem</div>
-              <div class="diag-count">47</div>
-            </div>
-            <div class="diag-row">
-              <div class="diag-left"><div class="diag-dot" style="background:var(--amber);"></div>TDAH</div>
-              <div class="diag-count">33</div>
-            </div>
-            <div class="diag-row">
-              <div class="diag-left"><div class="diag-dot" style="background:var(--red);"></div>TEA Suporte Elevado</div>
-              <div class="diag-count">34</div>
-            </div>
-            <div class="diag-row">
-              <div class="diag-left"><div class="diag-dot" style="background:var(--purple);"></div>TEA Moderado</div>
-              <div class="diag-count">27</div>
-            </div>
-            <div class="diag-row">
-              <div class="diag-left"><div class="diag-dot" style="background:var(--text-light);"></div>Sem Diagnóstico</div>
-              <div class="diag-count">26</div>
-            </div>
-            <div class="diag-row">
-              <div class="diag-left"><div class="diag-dot" style="background:var(--green);"></div>TEA Leve</div>
-              <div class="diag-count">25</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div class="chart-card">
         <div class="chart-card-title">UBS — Volume de Triagens</div>
         <div class="chart-card-sub">Distribuição por unidade básica de saúde</div>
@@ -1238,52 +1090,6 @@ new Chart(document.getElementById('chartRisco'), {
     cutout: '68%',
     plugins: { legend: { display: false }, tooltip: {
       callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} (${(ctx.raw/10).toFixed(1)}%)` }
-    }}
-  }
-});
-
-// ── STATUS DOUGHNUT ──
-new Chart(document.getElementById('chartStatus'), {
-  type: 'doughnut',
-  data: {
-    labels: ['Realizada','Agendada','Aguardando','Cancelada'],
-    datasets: [{
-      data: [186,117,93,70],
-      backgroundColor: [green, blue, gray, red],
-      borderColor: '#ffffff',
-      borderWidth: 3,
-      hoverOffset: 6
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: '68%',
-    plugins: { legend: { display: false }, tooltip: {
-      callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` }
-    }}
-  }
-});
-
-// ── DIAGNÓSTICO DOUGHNUT ──
-new Chart(document.getElementById('chartDiag'), {
-  type: 'doughnut',
-  data: {
-    labels: ['Atraso Ling.','TDAH','TEA Sup. Elev.','TEA Moderado','Sem Diag.','TEA Leve'],
-    datasets: [{
-      data: [47,33,34,27,26,25],
-      backgroundColor: [blueL, amber, red, purple, gray, green],
-      borderColor: '#ffffff',
-      borderWidth: 3,
-      hoverOffset: 6
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: '65%',
-    plugins: { legend: { display: false }, tooltip: {
-      callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` }
     }}
   }
 });
