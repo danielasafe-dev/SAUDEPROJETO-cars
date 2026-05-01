@@ -60,25 +60,53 @@ export interface SpiMockSusDashboard {
   ultimasTriagens: SpiMockSusTriage[];
 }
 
-export async function getDashboardStats(): Promise<SpiMockSusDashboard> {
+export type DashboardFilter = {
+  risco?: string;
+  especialista?: string;
+  dataInicio?: string;
+  dataFim?: string;
+};
+
+export async function getDashboardStats(filter?: DashboardFilter): Promise<SpiMockSusDashboard> {
   if (!isMockMode()) {
-    return (await import('@/shared/api/client')).api.get('/api/dashboard/spi-mock').then((r) => r.data);
+    return (await import('@/shared/api/client')).api.get('/api/dashboard/spi-mock', { params: filter }).then((r) => r.data);
   }
 
-  const avg = evals.reduce((s, e) => s + e.scoreTotal, 0) / (evals.length || 1);
-  const severe = evals.filter((e) => e.scoreTotal >= 37).length;
+  const filteredEvals = evals.filter((e) => {
+    if (filter?.risco) {
+      const risco = filter.risco?.toLocaleLowerCase('pt-BR') ?? '';
+      if (risco.includes('severo') && e.scoreTotal < 37) return false;
+      if ((risco.includes('leve') || risco.includes('moderado')) && (e.scoreTotal <= 29.5 || e.scoreTotal >= 37)) return false;
+      if (risco.includes('sem') && e.scoreTotal > 29.5) return false;
+    }
+
+    const evaluationDate = new Date(e.dataAvaliacao);
+    if (filter?.dataInicio && evaluationDate < new Date(`${filter.dataInicio}T00:00:00`)) {
+      return false;
+    }
+
+    if (filter?.dataFim && evaluationDate > new Date(`${filter.dataFim}T23:59:59`)) {
+      return false;
+    }
+
+    return true;
+  });
+  const avg = filteredEvals.reduce((s, e) => s + e.scoreTotal, 0) / (filteredEvals.length || 1);
+  const severe = filteredEvals.filter((e) => e.scoreTotal >= 37).length;
+  const encaminhados = filteredEvals.filter((e) => e.scoreTotal > 29.5).length;
+  const scores = filteredEvals.map((e) => e.scoreTotal);
 
   return {
     fonte: 'mockData.ts',
     aba: 'avaliacoes',
     atualizadoEm: new Date().toISOString(),
-    totalPacientes: new Set(evals.map((e) => e.patientId)).size,
-    totalTriagens: evals.length,
+    totalPacientes: new Set(filteredEvals.map((e) => e.patientId)).size,
+    totalTriagens: filteredEvals.length,
     triagensMesAtual: 2,
     scoreMedio: Math.round(avg * 10) / 10,
-    menorScore: Math.min(...evals.map((e) => e.scoreTotal)),
-    maiorScore: Math.max(...evals.map((e) => e.scoreTotal)),
-    encaminhados: evals.filter((e) => e.scoreTotal > 29.5).length,
+    menorScore: scores.length ? Math.min(...scores) : 0,
+    maiorScore: scores.length ? Math.max(...scores) : 0,
+    encaminhados,
     consultasAgendadas: 0,
     consultasRealizadas: 0,
     consultasCanceladas: 0,
@@ -87,10 +115,10 @@ export async function getDashboardStats(): Promise<SpiMockSusDashboard> {
     casosSeveros: severe,
     tempoMedioEsperaDias: 0,
     tempoMedioIntervencaoDias: 0,
-    consultasEvitadas: 0,
-    economiaFinanceiraEstimada: 0,
+    consultasEvitadas: filteredEvals.length - encaminhados,
+    economiaFinanceiraEstimada: (filteredEvals.length - encaminhados) * 1000,
     custoMedioConsultaEspecializada: 1000,
-    taxaEncaminhamento: 0,
+    taxaEncaminhamento: filteredEvals.length ? Math.round((encaminhados * 1000) / filteredEvals.length) / 10 : 0,
     taxaComparecimento: 0,
     taxaDiagnosticoConfirmado: 0,
     taxaEncaminhamentoAssertivo: 0,
@@ -98,15 +126,15 @@ export async function getDashboardStats(): Promise<SpiMockSusDashboard> {
     periodoTriagens: { inicio: null, fim: null },
     distribuicaoTriagensMensais: [],
     distribuicaoRisco: [
-      { label: 'Sem sinais', value: evals.filter((e) => e.scoreTotal <= 29.5).length },
-      { label: 'Leve/Moderado', value: evals.filter((e) => e.scoreTotal > 29.5 && e.scoreTotal < 37).length },
+      { label: 'Sem sinais', value: filteredEvals.filter((e) => e.scoreTotal <= 29.5).length },
+      { label: 'Leve/Moderado', value: filteredEvals.filter((e) => e.scoreTotal > 29.5 && e.scoreTotal < 37).length },
       { label: 'Severo', value: severe },
     ],
     distribuicaoStatusConsulta: [],
     distribuicaoEspecialista: [],
     distribuicaoDiagnostico: [],
     distribuicaoTratamento: [],
-    ultimasTriagens: evals.slice(-6).reverse().map((e) => ({
+    ultimasTriagens: filteredEvals.slice(-6).reverse().map((e) => ({
       idPaciente: String(e.patientId),
       nomeCrianca: e.patientNome,
       idadeAnos: null,

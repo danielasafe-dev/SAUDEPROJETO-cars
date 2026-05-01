@@ -13,10 +13,17 @@ public sealed class SpiMockSusDashboardService
         _environment = environment;
     }
 
-    public async Task<SpiMockSusDashboardResponse> GetAsync(CancellationToken cancellationToken = default)
+    public async Task<SpiMockSusDashboardResponse> GetAsync(
+        string? risco = null,
+        string? especialista = null,
+        string? mes = null,
+        DateTime? dataInicio = null,
+        DateTime? dataFim = null,
+        CancellationToken cancellationToken = default)
     {
         var csvPath = ResolveDataPath("SPI mockados.csv");
         var rows = await Task.Run(() => ReadCsvRows(csvPath), cancellationToken);
+        rows = ApplyFilters(rows, risco, especialista, mes, dataInicio, dataFim);
 
         var scores = rows.Select(x => x.ScoreTriagem).Where(x => x.HasValue).Select(x => x!.Value).ToArray();
         var waitingTimes = rows.Select(x => x.TempoEsperaDias).Where(x => x.HasValue).Select(x => x!.Value).ToArray();
@@ -90,6 +97,38 @@ public sealed class SpiMockSusDashboardService
                 })
                 .ToArray()
         };
+    }
+
+    private static List<SpiMockSusRow> ApplyFilters(IEnumerable<SpiMockSusRow> rows, string? risco, string? especialista, string? mes, DateTime? dataInicio, DateTime? dataFim)
+    {
+        var query = rows;
+
+        if (!string.IsNullOrWhiteSpace(risco))
+        {
+            query = query.Where(x => Same(x.NivelRisco, risco));
+        }
+
+        if (!string.IsNullOrWhiteSpace(especialista))
+        {
+            query = query.Where(x => Same(x.EspecialistaDestino, especialista));
+        }
+
+        if (!string.IsNullOrWhiteSpace(mes))
+        {
+            query = query.Where(x => x.DataTriagem.HasValue && Same(MonthlyLabel(x.DataTriagem.Value), mes));
+        }
+
+        if (dataInicio.HasValue)
+        {
+            query = query.Where(x => x.DataTriagem.HasValue && x.DataTriagem.Value.Date >= dataInicio.Value.Date);
+        }
+
+        if (dataFim.HasValue)
+        {
+            query = query.Where(x => x.DataTriagem.HasValue && x.DataTriagem.Value.Date <= dataFim.Value.Date);
+        }
+
+        return query.ToList();
     }
 
     private string ResolveDataPath(string fileName)
@@ -179,17 +218,22 @@ public sealed class SpiMockSusDashboardService
 
     private static IReadOnlyCollection<DistributionItemResponse> MonthlyDistribution(IEnumerable<SpiMockSusRow> rows)
     {
-        var culture = CultureInfo.GetCultureInfo("pt-BR");
         return rows
             .Where(x => x.DataTriagem.HasValue)
             .GroupBy(x => new DateTime(x.DataTriagem!.Value.Year, x.DataTriagem.Value.Month, 1))
             .OrderBy(x => x.Key)
             .Select(group => new DistributionItemResponse
             {
-                Label = culture.TextInfo.ToTitleCase(group.Key.ToString("MMM/yy", culture).Replace(".", "")),
+                Label = MonthlyLabel(group.Key),
                 Value = group.Count()
             })
             .ToArray();
+    }
+
+    private static string MonthlyLabel(DateTime date)
+    {
+        var culture = CultureInfo.GetCultureInfo("pt-BR");
+        return culture.TextInfo.ToTitleCase(date.ToString("MMM/yy", culture).Replace(".", ""));
     }
 
     private static IReadOnlyCollection<DistributionItemResponse> Distribution(

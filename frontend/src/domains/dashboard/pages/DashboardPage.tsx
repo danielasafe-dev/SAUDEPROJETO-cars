@@ -1,22 +1,20 @@
-import { useEffect, useState } from 'react';
-import {
-  Activity,
-  Banknote,
-  CalendarDays,
-  CheckCircle2,
-  ClipboardList,
-  Route,
-  Sparkles,
-  TrendingUp,
-} from 'lucide-react';
-import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { getDashboardStats, type DashboardDistributionItem, type SpiMockSusDashboard } from '../api';
+import { useEffect, useMemo, useState } from 'react';
+import { Activity, Banknote, CalendarDays, CheckCircle2, ClipboardList, Filter, Route, Sparkles, TrendingUp, X } from 'lucide-react';
+import { getDashboardStats, type DashboardFilter, type SpiMockSusDashboard } from '../api';
+import { DistributionDonut, HorizontalBars, MonthlyBars } from '../components/DashboardCharts';
+import PeriodFilter, { type PeriodSelection } from '../components/PeriodFilter';
 import StatsCards from '../components/StatsCards';
 
-const riskColors = ['#ef4444', '#f59e0b', '#5ba4e6', '#22c55e'];
-const palette = ['#2272c3', '#5ba4e6', '#7c3aed', '#f59e0b', '#22c55e', '#ef4444', '#94a3b8'];
+type DashboardFilterState = {
+  risco?: string;
+  especialista?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  periodoLabel?: string;
+  monthLabel?: string;
+};
 
-function formatDate(date: string | null) {
+function formatDate(date: string | null | undefined) {
   return date ? new Date(date).toLocaleDateString('pt-BR') : '-';
 }
 
@@ -28,23 +26,171 @@ function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(value);
 }
 
+function formatDateInput(date: string) {
+  return date ? new Date(`${date}T00:00:00`).toLocaleDateString('pt-BR') : '-';
+}
+
+function toDateInputValue(date: string | null | undefined) {
+  return date ? new Date(date).toISOString().slice(0, 10) : '';
+}
+
+function hasFilters(filters: DashboardFilterState) {
+  return Boolean(filters.risco || filters.especialista || filters.dataInicio || filters.dataFim);
+}
+
+function toApiFilter(filters: DashboardFilterState): DashboardFilter {
+  return {
+    risco: filters.risco,
+    especialista: filters.especialista,
+    dataInicio: filters.dataInicio,
+    dataFim: filters.dataFim,
+  };
+}
+
+function getMonthRangeFromLabel(label: string) {
+  const [rawMonth, rawYear] = label.split('/');
+  const monthMap: Record<string, number> = {
+    jan: 0,
+    fev: 1,
+    mar: 2,
+    abr: 3,
+    mai: 4,
+    jun: 5,
+    jul: 6,
+    ago: 7,
+    set: 8,
+    out: 9,
+    nov: 10,
+    dez: 11,
+  };
+  const month = monthMap[(rawMonth ?? '').toLocaleLowerCase('pt-BR').slice(0, 3)];
+  const year = 2000 + Number(rawYear);
+
+  if (month === undefined || Number.isNaN(year)) return null;
+
+  const start = new Date(year, month, 1);
+  const end = new Date(year, month + 1, 0);
+
+  return {
+    start: start.toISOString().slice(0, 10),
+    end: end.toISOString().slice(0, 10),
+  };
+}
+
 export default function DashboardPage() {
-  const [stats, setStats] = useState<SpiMockSusDashboard | null>(null);
+  const [baseStats, setBaseStats] = useState<SpiMockSusDashboard | null>(null);
+  const [filteredStats, setFilteredStats] = useState<SpiMockSusDashboard | null>(null);
+  const [filters, setFilters] = useState<DashboardFilterState>({});
   const [error, setError] = useState<string | null>(null);
+
+  const filtersActive = hasFilters(filters);
+  const stats = filtersActive ? filteredStats ?? baseStats : baseStats;
 
   useEffect(() => {
     getDashboardStats()
-      .then(setStats)
+      .then((data) => {
+        setBaseStats(data);
+      })
       .catch((err) => {
         console.error('Erro ao carregar dashboard:', err);
         setError('Erro ao carregar indicadores do CSV');
       });
   }, []);
 
+  useEffect(() => {
+    if (!baseStats || !filtersActive) return;
+
+    let isCurrent = true;
+    getDashboardStats(toApiFilter(filters))
+      .then((data) => {
+        if (isCurrent) setFilteredStats(data);
+      })
+      .catch((err) => {
+        console.error('Erro ao filtrar dashboard:', err);
+        if (isCurrent) setError('Erro ao filtrar indicadores do CSV');
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [baseStats, filters, filtersActive]);
+
+  const activeChips = useMemo(
+    () => [
+      filters.periodoLabel ? { key: 'periodo', label: `Período: ${filters.periodoLabel}` } : null,
+      filters.risco ? { key: 'risco', label: `Risco: ${filters.risco}` } : null,
+      filters.especialista ? { key: 'especialista', label: `Especialidade: ${filters.especialista}` } : null,
+    ].filter((item): item is { key: string; label: string } => Boolean(item)),
+    [filters]
+  );
+
   if (error && !stats) return <div className="text-center py-8 text-red-400">{error}</div>;
   if (!stats) return <div className="text-center py-8 text-gray-400">Carregando...</div>;
 
-  const lastMonthly = stats.distribuicaoTriagensMensais.slice(-16);
+  const fullPeriodStart = toDateInputValue(baseStats?.periodoTriagens.inicio ?? stats.periodoTriagens.inicio);
+  const fullPeriodEnd = toDateInputValue(baseStats?.periodoTriagens.fim ?? stats.periodoTriagens.fim);
+  const displayedPeriod = filters.periodoLabel ?? `${formatDate(stats.periodoTriagens.inicio)} - ${formatDate(stats.periodoTriagens.fim)}`;
+  const monthlyData = filters.monthLabel ? baseStats?.distribuicaoTriagensMensais ?? stats.distribuicaoTriagensMensais : stats.distribuicaoTriagensMensais;
+  const riskData = filters.risco ? baseStats?.distribuicaoRisco ?? stats.distribuicaoRisco : stats.distribuicaoRisco;
+  const specialistData = filters.especialista ? baseStats?.distribuicaoEspecialista ?? stats.distribuicaoEspecialista : stats.distribuicaoEspecialista;
+
+  const clearFilter = (key: string) => {
+    setFilters((current) => {
+      if (key === 'periodo') {
+        const { dataInicio, dataFim, periodoLabel, monthLabel, ...rest } = current;
+        void dataInicio;
+        void dataFim;
+        void periodoLabel;
+        void monthLabel;
+        return rest;
+      }
+      if (key === 'risco') {
+        const { risco, ...rest } = current;
+        void risco;
+        return rest;
+      }
+      if (key === 'especialista') {
+        const { especialista, ...rest } = current;
+        void especialista;
+        return rest;
+      }
+      return current;
+    });
+  };
+
+  const applyPeriod = (selection: PeriodSelection) => {
+    setFilters((current) => ({
+      ...current,
+      dataInicio: selection.dataInicio,
+      dataFim: selection.dataFim,
+      periodoLabel: selection.label,
+      monthLabel: selection.monthLabel,
+    }));
+  };
+
+  const applyMonthlyFilter = (label: string) => {
+    const range = getMonthRangeFromLabel(label);
+    if (!range) return;
+
+    setFilters((current) => {
+      if (current.monthLabel === label) {
+        const { dataInicio, dataFim, periodoLabel, monthLabel, ...rest } = current;
+        void dataInicio;
+        void dataFim;
+        void periodoLabel;
+        void monthLabel;
+        return rest;
+      }
+
+      return {
+        ...current,
+        dataInicio: range.start,
+        dataFim: range.end,
+        periodoLabel: `${formatDateInput(range.start)} - ${formatDateInput(range.end)}`,
+        monthLabel: label,
+      };
+    });
+  };
 
   return (
     <div className="space-y-7">
@@ -56,13 +202,29 @@ export default function DashboardPage() {
               NEXOS · Dashboard Triagem
             </div>
             <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-gray-900">Indicadores gerenciais SPI</h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Base mockada via API a partir de {stats.fonte}
-            </p>
+            <p className="mt-1 text-sm text-gray-500">Base mockada via API a partir de {stats.fonte}</p>
+
+            {activeChips.length ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {activeChips.map((chip) => (
+                  <button
+                    key={chip.key}
+                    type="button"
+                    onClick={() => clearFilter(chip.key)}
+                    className="inline-flex max-w-full items-center gap-2 rounded-lg border border-blue-100 bg-white/80 px-3 py-2 text-sm font-extrabold text-gray-900 shadow-sm transition hover:bg-blue-50"
+                    title="Remover filtro"
+                  >
+                    <Filter className="h-4 w-4 shrink-0 text-blue-700" />
+                    <span className="truncate">{chip.label}</span>
+                    <X className="h-4 w-4 shrink-0 text-blue-700" />
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-            <Metric label="Período" value={`${formatDate(stats.periodoTriagens.inicio)} - ${formatDate(stats.periodoTriagens.fim)}`} />
+            <PeriodFilter value={displayedPeriod} fullStart={fullPeriodStart} fullEnd={fullPeriodEnd} onApply={applyPeriod} onClear={() => clearFilter('periodo')} />
             <Metric label="Base" value={`${stats.totalTriagens.toLocaleString('pt-BR')} registros`} />
             <Metric label="Score" value={`${stats.menorScore}-${stats.maiorScore}`} />
             <Metric label="Atualização" value={formatDate(stats.atualizadoEm)} />
@@ -73,27 +235,24 @@ export default function DashboardPage() {
       <SectionTitle title="Visão Geral" />
       <StatsCards
         items={[
-          { icon: ClipboardList, label: 'Crianças triadas', value: stats.totalTriagens.toLocaleString('pt-BR'), tone: 'blue', tag: 'KPI 01', foot: 'base completa do CSV' },
+          { icon: ClipboardList, label: 'Crianças triadas', value: stats.totalTriagens.toLocaleString('pt-BR'), tone: 'blue', tag: 'KPI 01', foot: filtersActive ? 'recorte selecionado no dashboard' : 'base completa do CSV' },
           { icon: TrendingUp, label: 'Score médio', value: stats.scoreMedio.toFixed(1), tone: 'amber', tag: 'KPI 02', foot: 'CARS-2 / M-CHAT-R/F' },
-          { icon: Activity, label: 'Casos severos', value: stats.casosSeveros, tone: 'red', tag: 'KPI 03', foot: `${formatPercent((stats.casosSeveros * 100) / stats.totalTriagens)} das triagens` },
+          { icon: Activity, label: 'Casos severos', value: stats.casosSeveros, tone: 'red', tag: 'KPI 03', foot: `${formatPercent((stats.casosSeveros * 100) / Math.max(stats.totalTriagens, 1))} das triagens` },
           { icon: CalendarDays, label: 'Triagens no mês', value: stats.triagensMesAtual, tone: 'green', tag: 'KPI 04', foot: 'último mês da base' },
         ]}
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1.45fr_1fr] gap-5">
-        <ChartCard title="Crianças triadas por mês" subtitle="Volume mensal de triagens realizadas">
-          <ResponsiveContainer width="100%" height={230}>
-            <BarChart data={lastMonthly}>
-              <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} angle={-20} textAnchor="end" height={54} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Bar dataKey="value" radius={[7, 7, 0, 0]} fill="#2272c3" />
-            </BarChart>
-          </ResponsiveContainer>
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.45fr_1fr]">
+        <ChartCard title="Crianças triadas por mês" subtitle="Clique em uma coluna para filtrar pelo mês">
+          <MonthlyBars data={monthlyData.slice(-16)} selectedLabel={filters.monthLabel} onSelect={applyMonthlyFilter} />
         </ChartCard>
 
-        <ChartCard title="Distribuição por nível de risco" subtitle="Classificação clínica da triagem">
-          <DistributionDonut data={stats.distribuicaoRisco} colors={riskColors} />
+        <ChartCard title="Distribuição por nível de risco" subtitle="Clique em um nível para filtrar o dashboard">
+          <DistributionDonut
+            data={riskData}
+            selectedLabel={filters.risco}
+            onSelect={(label) => setFilters((current) => ({ ...current, risco: current.risco === label ? undefined : label }))}
+          />
         </ChartCard>
       </div>
 
@@ -101,28 +260,42 @@ export default function DashboardPage() {
       <StatsCards
         columnsClassName="grid-cols-1"
         items={[
-          { icon: Route, label: 'Total encaminhadas', value: stats.encaminhados, tone: 'blue', tag: 'KPI 07', foot: `${formatPercent(stats.taxaEncaminhamento)} das triadas` },
+          {
+            icon: Route,
+            label: 'Total encaminhadas',
+            value: stats.encaminhados.toLocaleString('pt-BR'),
+            secondaryLabel: 'Das triadas',
+            secondaryValue: formatPercent(stats.taxaEncaminhamento),
+            progressValue: stats.taxaEncaminhamento,
+            tone: 'blue',
+            tag: 'KPI 07',
+            foot: `${stats.encaminhados.toLocaleString('pt-BR')} de ${stats.totalTriagens.toLocaleString('pt-BR')} crianças triadas foram encaminhadas`,
+          },
         ]}
       />
 
       <div className="grid grid-cols-1 gap-5">
-        <ChartCard title="Destino do encaminhamento" subtitle="Especialidades demandadas pela triagem">
-          <HorizontalBars data={stats.distribuicaoEspecialista} />
+        <ChartCard title="Destino do encaminhamento" subtitle="Clique em uma especialidade para priorizar esse recorte">
+          <HorizontalBars
+            data={specialistData}
+            selectedLabel={filters.especialista}
+            onSelect={(label) => setFilters((current) => ({ ...current, especialista: current.especialista === label ? undefined : label }))}
+          />
         </ChartCard>
       </div>
 
       <SectionTitle title="Impacto Econômico" tone="amber" />
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <ImpactCard
           icon={CheckCircle2}
-          title="KPI 10 — Consultas especializadas evitadas"
+          title="KPI 10 - Consultas especializadas evitadas"
           value={`${stats.consultasEvitadas.toLocaleString('pt-BR')} consultas evitadas`}
           subtitle="Sem triagem, toda criança iria direto ao especialista."
           detail={`${stats.totalTriagens.toLocaleString('pt-BR')} triadas - ${stats.encaminhados.toLocaleString('pt-BR')} encaminhadas = ${stats.consultasEvitadas.toLocaleString('pt-BR')} evitadas`}
         />
         <ImpactCard
           icon={Banknote}
-          title="KPI 11 — Economia financeira estimada"
+          title="KPI 11 - Economia financeira estimada"
           value={formatCurrency(stats.economiaFinanceiraEstimada)}
           subtitle={`Custo médio considerado: ${formatCurrency(stats.custoMedioConsultaEspecializada)} por consulta.`}
           detail="Estimativa conservadora para demonstrar o efeito da triagem como filtro."
@@ -130,18 +303,18 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Triagens recentes</h3>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+      <div className="rounded-xl border border-gray-200 bg-white p-4">
+        <h3 className="mb-3 text-sm font-semibold text-gray-700">Triagens recentes</h3>
+        <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
           {stats.ultimasTriagens.map((triagem) => (
-            <div key={triagem.idPaciente} className="flex items-center justify-between gap-3 p-3 bg-gray-50 rounded-lg">
+            <div key={triagem.idPaciente} className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium truncate">{triagem.nomeCrianca}</p>
+                <p className="truncate text-sm font-medium">{triagem.nomeCrianca}</p>
                 <p className="text-xs text-gray-500">
                   {formatDate(triagem.dataTriagem)} · {triagem.nivelRisco || 'Sem classificação'}
                 </p>
               </div>
-              <div className="text-right shrink-0">
+              <div className="shrink-0 text-right">
                 <p className="text-sm font-bold">{triagem.scoreTriagem ?? '-'}/60</p>
                 <p className="text-xs text-gray-500">{triagem.encaminhado ? 'Encaminhada' : 'Sem encaminhamento'}</p>
               </div>
@@ -157,7 +330,7 @@ function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-blue-100 bg-white/80 px-3 py-2">
       <p className="text-xs font-semibold text-gray-500">{label}</p>
-      <p className="text-sm font-extrabold text-gray-900 whitespace-nowrap">{value}</p>
+      <p className="whitespace-nowrap text-sm font-extrabold text-gray-900">{value}</p>
     </div>
   );
 }
@@ -183,71 +356,6 @@ function ChartCard({ title, subtitle, children }: { title: string; subtitle: str
       <h3 className="text-sm font-extrabold text-gray-900">{title}</h3>
       <p className="mb-4 text-xs font-medium text-gray-500">{subtitle}</p>
       {children}
-    </div>
-  );
-}
-
-function DistributionDonut({ data, colors }: { data: DashboardDistributionItem[]; colors: string[] }) {
-  const total = data.reduce((sum, item) => sum + item.value, 0);
-
-  return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-center">
-      <div className="h-56 w-full md:w-60 shrink-0 overflow-visible">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              nameKey="label"
-              cx="50%"
-              cy="50%"
-              innerRadius={54}
-              outerRadius={76}
-              paddingAngle={2}
-            >
-              {data.map((entry, index) => (
-                <Cell key={entry.label} fill={colors[index % colors.length]} />
-              ))}
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-      <DistributionList data={data.map((item) => ({ ...item, label: `${item.label} · ${formatPercent((item.value * 100) / Math.max(total, 1))}` }))} colors={colors} />
-    </div>
-  );
-}
-
-function HorizontalBars({ data }: { data: DashboardDistributionItem[] }) {
-  const max = Math.max(...data.map((item) => item.value), 1);
-
-  return (
-    <div className="space-y-3">
-      {data.map((item, index) => (
-        <div key={item.label} className="flex items-center gap-3">
-          <span className="w-40 truncate text-xs font-semibold text-gray-600">{item.label}</span>
-          <div className="h-2.5 flex-1 rounded-full bg-gray-100">
-            <div className="h-full rounded-full" style={{ width: `${(item.value * 100) / max}%`, backgroundColor: palette[index % palette.length] }} />
-          </div>
-          <span className="w-10 text-right text-xs font-extrabold text-gray-800">{item.value}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function DistributionList({ data, colors }: { data: DashboardDistributionItem[]; colors: string[] }) {
-  return (
-    <div className="w-full space-y-2">
-      {data.map((item, index) => (
-        <div key={item.label} className="flex items-center justify-between gap-3 border-b border-gray-100 py-2 last:border-b-0">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: colors[index % colors.length] }} />
-            <span className="truncate text-sm font-semibold text-gray-700">{item.label}</span>
-          </div>
-          <span className="text-sm font-extrabold text-gray-900">{item.value}</span>
-        </div>
-      ))}
     </div>
   );
 }

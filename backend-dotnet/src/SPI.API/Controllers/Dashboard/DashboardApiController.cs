@@ -30,9 +30,15 @@ public sealed class DashboardController : ControllerBase
     }
 
     [HttpGet("spi-mock")]
-    public async Task<IActionResult> GetSpiMock(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetSpiMock(
+        [FromQuery] string? risco,
+        [FromQuery] string? especialista,
+        [FromQuery] string? mes,
+        [FromQuery] DateTime? dataInicio,
+        [FromQuery] DateTime? dataFim,
+        CancellationToken cancellationToken)
     {
-        var result = await _spiMockSusDashboardService.GetAsync(cancellationToken);
+        var result = await _spiMockSusDashboardService.GetAsync(risco, especialista, mes, dataInicio, dataFim, cancellationToken);
         return Ok(result);
     }
 }
