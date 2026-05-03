@@ -9,6 +9,9 @@ import { getForms } from '@/domains/forms/api';
 import type { Formulario } from '@/domains/forms/types';
 import { getGroups } from '@/domains/groups/api';
 import type { Group } from '@/domains/groups/types';
+import { createPatient, getReusablePatients, type CreatePatientInput } from '@/domains/patients/api';
+import PatientCreateDialog from '@/domains/patients/components/dialogs/PatientCreateDialog';
+import type { Patient } from '@/types';
 
 interface EvaluationFormPageProps {
   embedded?: boolean;
@@ -28,9 +31,11 @@ export default function EvaluationFormPage({ embedded = false, onCancel }: Evalu
 
   const [mode, setMode] = useState<'existing' | 'new'>('existing');
   const [existingPatientId, setExistingPatientId] = useState<number | null>(null);
+  const [createdPatient, setCreatedPatient] = useState<Patient | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
-  const [newName, setNewName] = useState('');
+  const [patientDialogOpen, setPatientDialogOpen] = useState(false);
   const [answers, setAnswers] = useState<EvaluationAnswers>({});
+  const [observations, setObservations] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -88,8 +93,8 @@ export default function EvaluationFormPage({ embedded = false, onCancel }: Evalu
       setError('Selecione um paciente existente.');
       return;
     }
-    if (mode === 'new' && !newName.trim()) {
-      setError('Informe o nome do paciente.');
+    if (mode === 'new') {
+      setError('Cadastre e selecione o novo paciente antes de salvar a avaliacao.');
       return;
     }
     if (answered < total) {
@@ -104,17 +109,41 @@ export default function EvaluationFormPage({ embedded = false, onCancel }: Evalu
     setError('');
     setLoading(true);
     try {
-      const pid = mode === 'existing' ? existingPatientId! : Date.now();
-      const createdEvaluation = await createEvaluation({ patientId: pid, respostas: answers, formId: formIdToSend, groupId: selectedGroupId });
+      const pid = existingPatientId!;
+      const createdEvaluation = await createEvaluation({
+        patientId: pid,
+        respostas: answers,
+        formId: formIdToSend,
+        groupId: selectedGroupId,
+        observacoes: observations.trim() || undefined,
+      });
       const score = calcScore(answers);
       const classification = getClassification(score);
       navigate('/resultado', {
-        state: { ...classification, evaluationId: createdEvaluation.id, patientId: pid, patientNome: createdEvaluation.patientNome ?? (mode === 'new' ? newName : undefined), answers },
+        state: {
+          ...classification,
+          evaluationId: createdEvaluation.id,
+          patientId: pid,
+          patientNome: createdEvaluation.patientNome ?? createdPatient?.nome,
+          observacoes: createdEvaluation.observacoes ?? (observations.trim() || null),
+          answers,
+        },
       });
     } catch {
       setError('Erro ao salvar avaliacao');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreatePatient = async (data: CreatePatientInput) => {
+    const patient = await createPatient(data);
+    setCreatedPatient(patient);
+    setExistingPatientId(patient.id);
+    setMode('existing');
+
+    if (!selectedGroupId && patient.group_id) {
+      setSelectedGroupId(patient.group_id);
     }
   };
 
@@ -230,14 +259,19 @@ export default function EvaluationFormPage({ embedded = false, onCancel }: Evalu
           </button>
         </div>
         {mode === 'existing' ? (
-          <ExistingPatientSelector value={existingPatientId} onChange={setExistingPatientId} />
+          <ExistingPatientSelector value={existingPatientId} createdPatient={createdPatient} onChange={setExistingPatientId} />
         ) : (
-          <input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Nome completo do paciente"
-          />
+          <div className="rounded-lg border border-dashed border-blue-200 bg-blue-50 p-4">
+            <p className="text-sm font-semibold text-blue-800">Cadastrar paciente durante a avaliacao</p>
+            <p className="mt-1 text-xs text-blue-700">O cadastro sera salvo normalmente e tambem aparecera na tela de pacientes.</p>
+            <button
+              type="button"
+              onClick={() => setPatientDialogOpen(true)}
+              className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              Abrir cadastro de paciente
+            </button>
+          </div>
         )}
 
         <div className="space-y-1">
@@ -270,6 +304,18 @@ export default function EvaluationFormPage({ embedded = false, onCancel }: Evalu
         ))}
       </div>
 
+      <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <label className="block text-sm font-semibold text-gray-700">Observacao do avaliador</label>
+        <textarea
+          value={observations}
+          onChange={(event) => setObservations(event.target.value.slice(0, 2000))}
+          rows={4}
+          className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Registre aqui algo relevante que nao entrou nas perguntas da avaliacao."
+        />
+        <p className="mt-1 text-right text-xs text-gray-400">{observations.length}/2000</p>
+      </div>
+
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
           {error}
@@ -296,18 +342,43 @@ export default function EvaluationFormPage({ embedded = false, onCancel }: Evalu
           {loading ? 'Salvando...' : 'Salvar Avaliacao'}
         </button>
       </div>
+
+      <PatientCreateDialog
+        open={patientDialogOpen}
+        onClose={() => setPatientDialogOpen(false)}
+        groups={groups}
+        defaultGroupId={selectedGroupId ? String(selectedGroupId) : groups.length === 1 ? String(groups[0].id) : ''}
+        requireGroupSelection={groups.length > 0}
+        onSubmit={handleCreatePatient}
+      />
     </div>
   );
 }
 
-function ExistingPatientSelector({ value, onChange }: { value: number | null; onChange: (id: number) => void }) {
-  const [patients, setPatients] = useState<{ id: number; nome: string; idade: number | null }[]>([]);
+function ExistingPatientSelector({
+  value,
+  createdPatient,
+  onChange,
+}: {
+  value: number | null;
+  createdPatient: Patient | null;
+  onChange: (id: number) => void;
+}) {
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [show, setShow] = useState(false);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    import('@/domains/patients/api').then(({ getReusablePatients }) => getReusablePatients().then(setPatients));
+    getReusablePatients().then(setPatients);
   }, []);
+
+  useEffect(() => {
+    if (!createdPatient) return;
+    setPatients((current) => {
+      const withoutDuplicate = current.filter((patient) => patient.id !== createdPatient.id);
+      return [createdPatient, ...withoutDuplicate];
+    });
+  }, [createdPatient]);
 
   const filtered = patients.filter((p) => p.nome.toLowerCase().includes(search.toLowerCase()));
   const selected = patients.find((p) => p.id === value);

@@ -15,6 +15,7 @@ public sealed class EvaluationDetails
     public decimal ScoreTotal { get; init; }
     public decimal PesoTotal { get; init; }
     public string Classificacao { get; init; } = string.Empty;
+    public string? Observacoes { get; init; }
     public DateTime DataAvaliacao { get; init; }
     public EvaluationReferralDetails? Referral { get; init; }
 }

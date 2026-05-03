@@ -9,7 +9,7 @@ public sealed class Evaluation : Entity, IAggregateRoot
     {
     }
 
-    public Evaluation(int patientId, int avaliadorId, int groupId, Dictionary<int, int> respostas)
+    public Evaluation(int patientId, int avaliadorId, int groupId, Dictionary<int, int> respostas, string? observacoes = null)
     {
         if (patientId <= 0)
         {
@@ -33,6 +33,7 @@ public sealed class Evaluation : Entity, IAggregateRoot
         ScoreTotal = SPIClassificationService.CalculateScore(Respostas);
         PesoTotal = Respostas.Count;
         Classificacao = SPIClassificationService.Classify(ScoreTotal);
+        Observacoes = NormalizeObservations(observacoes);
         DataAvaliacao = DateTime.UtcNow;
     }
 
@@ -42,7 +43,8 @@ public sealed class Evaluation : Entity, IAggregateRoot
         int groupId,
         int formTemplateId,
         Dictionary<int, int> respostas,
-        IReadOnlyCollection<FormQuestion> questions)
+        IReadOnlyCollection<FormQuestion> questions,
+        string? observacoes = null)
     {
         if (patientId <= 0)
         {
@@ -86,6 +88,7 @@ public sealed class Evaluation : Entity, IAggregateRoot
             2,
             MidpointRounding.AwayFromZero);
         Classificacao = "formulario";
+        Observacoes = NormalizeObservations(observacoes);
         DataAvaliacao = DateTime.UtcNow;
     }
 
@@ -97,6 +100,7 @@ public sealed class Evaluation : Entity, IAggregateRoot
     public decimal ScoreTotal { get; private set; }
     public decimal PesoTotal { get; private set; }
     public string Classificacao { get; private set; } = string.Empty;
+    public string? Observacoes { get; private set; }
     public DateTime DataAvaliacao { get; private set; }
     public int? OrganizationId { get; private set; }
 
@@ -108,6 +112,15 @@ public sealed class Evaluation : Entity, IAggregateRoot
     public Organization? Organization { get; private set; }
 
     public void AssignOrganization(int organizationId) => OrganizationId = organizationId;
-}
 
+    private static string? NormalizeObservations(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return value.Trim();
+    }
+}
 

@@ -46,6 +46,7 @@ export interface Evaluation {
   respostas: Record<number, number>;
   scoreTotal: number;
   classificacao: string;
+  observacoes?: string | null;
   dataAvaliacao: string;
   referral?: EvaluationReferral | null;
 }

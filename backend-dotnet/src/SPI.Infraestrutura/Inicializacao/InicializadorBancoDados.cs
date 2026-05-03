@@ -129,6 +129,7 @@ public static class DatabaseInitializer
             ("groups", "organization_id", "ALTER TABLE groups ADD COLUMN organization_id INTEGER NULL;"),
             ("patients", "organization_id", "ALTER TABLE patients ADD COLUMN organization_id INTEGER NULL;"),
             ("evaluations", "organization_id", "ALTER TABLE evaluations ADD COLUMN organization_id INTEGER NULL;"),
+            ("evaluations", "observacoes", "ALTER TABLE evaluations ADD COLUMN observacoes TEXT NULL;"),
             ("form_templates", "organization_id", "ALTER TABLE form_templates ADD COLUMN organization_id INTEGER NULL;"),
         };
 

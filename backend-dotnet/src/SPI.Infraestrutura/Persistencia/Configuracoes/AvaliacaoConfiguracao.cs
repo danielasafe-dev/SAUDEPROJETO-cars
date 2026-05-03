@@ -56,6 +56,10 @@ public sealed class EvaluationConfiguration : IEntityTypeConfiguration<Evaluatio
             .HasMaxLength(50)
             .IsRequired();
 
+        builder.Property(x => x.Observacoes)
+            .HasColumnName("observacoes")
+            .HasMaxLength(2000);
+
         builder.Property(x => x.DataAvaliacao)
             .HasColumnName("data_avaliacao")
             .IsRequired();
@@ -94,6 +98,5 @@ public sealed class EvaluationConfiguration : IEntityTypeConfiguration<Evaluatio
         builder.HasIndex(x => x.FormTemplateId);
     }
 }
-
 
 

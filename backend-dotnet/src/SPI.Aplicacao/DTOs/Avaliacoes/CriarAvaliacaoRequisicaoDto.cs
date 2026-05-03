@@ -17,6 +17,10 @@ public sealed class CreateEvaluationRequestDto
     [JsonPropertyName("groupId")]
     public int? GroupId { get; init; }
 
+    [MaxLength(2000)]
+    [JsonPropertyName("observacoes")]
+    public string? Observacoes { get; init; }
+
     [Required]
     public Dictionary<int, int> Respostas { get; init; } = [];
 

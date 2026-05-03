@@ -132,6 +132,7 @@ public sealed class EvaluationRepository : IEvaluationRepository
         ScoreTotal = evaluation.ScoreTotal,
         PesoTotal = evaluation.PesoTotal,
         Classificacao = evaluation.Classificacao,
+        Observacoes = evaluation.Observacoes,
         DataAvaliacao = evaluation.DataAvaliacao,
         Referral = evaluation.Referral is null
             ? null

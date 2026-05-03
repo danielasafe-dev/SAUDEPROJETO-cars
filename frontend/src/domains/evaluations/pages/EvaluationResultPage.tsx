@@ -10,6 +10,7 @@ interface ResultState {
   cls: string;
   evaluationId?: number;
   patientId: number;
+  observacoes?: string | null;
   answers: Record<number, number>;
 }
 
@@ -22,7 +23,7 @@ export default function EvaluationResultPage() {
     return null;
   }
 
-  const { score, classification, color, cls, evaluationId, answers }: ResultState = state;
+  const { score, classification, color, cls, evaluationId, observacoes, answers }: ResultState = state;
   const labels = ['Normal', 'Leve', 'Moderado', 'Grave'];
 
   return (
@@ -50,6 +51,13 @@ export default function EvaluationResultPage() {
       <ScoreChart respostas={answers} />
 
       <EvaluationReferralDecision evaluationId={evaluationId} />
+
+      {observacoes ? (
+        <div className="rounded-xl border border-gray-200 bg-white p-4">
+          <h3 className="mb-2 text-sm font-semibold text-gray-700">Observacao do avaliador</h3>
+          <p className="whitespace-pre-wrap text-sm text-gray-700">{observacoes}</p>
+        </div>
+      ) : null}
 
       <div className="rounded-xl border border-gray-200 bg-white p-4">
         <h3 className="mb-3 text-sm font-semibold text-gray-700">Detalhamento por Dimensao</h3>

@@ -1,5 +1,6 @@
 import { isMockMode } from '@/shared/api/client';
-import { mockEvaluations as evals } from '@/shared/api/mockData';
+import { mockEvaluations as evals, mockGroups } from '@/shared/api/mockData';
+import type { Group } from '@/domains/groups/types';
 import type { Evaluation, EvaluationReferral } from '@/types';
 
 export interface DashboardDistributionItem {
@@ -83,6 +84,7 @@ export type DashboardFilter = {
   especialista?: string;
   dataInicio?: string;
   dataFim?: string;
+  grupoId?: number;
 };
 
 export async function getDashboardStats(filter?: DashboardFilter): Promise<SpiMockSusDashboard> {
@@ -93,7 +95,8 @@ export async function getDashboardStats(filter?: DashboardFilter): Promise<SpiMo
       api.get('/api/dashboard', { params: filter }),
     ]);
 
-    return mergeSystemSummaryIntoDashboard(mockResponse.data, systemResponse.data);
+    const base = filter?.grupoId ? emptyDashboardForSystemFilter(mockResponse.data) : mockResponse.data;
+    return mergeSystemSummaryIntoDashboard(base, systemResponse.data);
   }
 
   const filteredEvals = evals.filter((e) => {
@@ -173,6 +176,17 @@ export async function getDashboardStats(filter?: DashboardFilter): Promise<SpiMo
   };
 }
 
+export async function getDashboardGroups(): Promise<Group[]> {
+  if (isMockMode()) {
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    return mockGroups.map(normalizeDashboardGroup);
+  }
+
+  const { api } = await import('@/shared/api/client');
+  const { data } = await api.get('/api/dashboard/groups');
+  return Array.isArray(data) ? data.map(normalizeDashboardGroup) : [];
+}
+
 export async function saveEvaluationReferral(
   evaluationId: number,
   data: { encaminhado: boolean; especialidade?: string | null; custoEstimado?: number }
@@ -220,7 +234,7 @@ export async function getEvals(): Promise<Evaluation[]> {
   return (await import('@/shared/api/client')).api.get('/api/evaluations').then((r) => r.data);
 }
 
-export async function createEvaluation(data: { patientId: number; respostas: Record<number, number>; formId?: number; groupId?: number }) {
+export async function createEvaluation(data: { patientId: number; respostas: Record<number, number>; formId?: number; groupId?: number; observacoes?: string }) {
   if (isMockMode()) {
     await new Promise((r) => setTimeout(r, 600));
     const total = Object.values(data.respostas).reduce((s, v) => s + v, 0);
@@ -234,6 +248,7 @@ export async function createEvaluation(data: { patientId: number; respostas: Rec
       respostas: data.respostas,
       scoreTotal: total,
       classificacao: cls,
+      observacoes: data.observacoes?.trim() || null,
       dataAvaliacao: new Date().toISOString(),
     } satisfies Evaluation;
   }
@@ -322,6 +337,70 @@ function mergeSystemSummaryIntoDashboard(base: SpiMockSusDashboard, system: Syst
     distribuicaoRisco: mergeDistribution(base.distribuicaoRisco, summary.distribuicaoRisco, ['Severo', 'Moderado', 'Leve', 'Sem Sinais']),
     distribuicaoEspecialista: mergeDistribution(base.distribuicaoEspecialista, summary.distribuicaoEspecialista).slice(0, 6),
   };
+}
+
+function emptyDashboardForSystemFilter(base: SpiMockSusDashboard): SpiMockSusDashboard {
+  return {
+    ...base,
+    fonte: 'sistema',
+    aba: 'Resumo por grupo',
+    totalPacientes: 0,
+    totalTriagens: 0,
+    triagensMesAtual: 0,
+    scoreMedio: 0,
+    menorScore: 0,
+    maiorScore: 0,
+    encaminhados: 0,
+    consultasAgendadas: 0,
+    consultasRealizadas: 0,
+    consultasCanceladas: 0,
+    diagnosticosConfirmados: 0,
+    tratamentosIniciados: 0,
+    casosSeveros: 0,
+    tempoMedioEsperaDias: 0,
+    tempoMedioIntervencaoDias: 0,
+    consultasEvitadas: 0,
+    economiaFinanceiraEstimada: 0,
+    taxaEncaminhamento: 0,
+    taxaComparecimento: 0,
+    taxaDiagnosticoConfirmado: 0,
+    taxaEncaminhamentoAssertivo: 0,
+    taxaTratamentoAposDiagnostico: 0,
+    periodoTriagens: { inicio: null, fim: null },
+    distribuicaoTriagensMensais: [],
+    distribuicaoRisco: [],
+    distribuicaoStatusConsulta: [],
+    distribuicaoEspecialista: [],
+    distribuicaoDiagnostico: [],
+    distribuicaoTratamento: [],
+    ultimasTriagens: [],
+  };
+}
+
+function normalizeDashboardGroup(payload: unknown): Group {
+  const raw = payload as Record<string, unknown>;
+
+  return {
+    id: Number(raw.id ?? raw.Id ?? 0),
+    nome: String(raw.nome ?? raw.Nome ?? ''),
+    gestor_id: nullableNumber(raw.gestor_id ?? raw.gestorId ?? raw.GestorId),
+    gestor_nome: nullableString(raw.gestor_nome ?? raw.gestorNome ?? raw.GestorNome),
+    ativo: Boolean(raw.ativo ?? raw.Ativo ?? false),
+    quantidade_membros: Number(raw.quantidade_membros ?? raw.quantidadeMembros ?? raw.QuantidadeMembros ?? 0),
+    criado_em: String(raw.criado_em ?? raw.criadoEm ?? raw.CriadoEm ?? new Date().toISOString()),
+  };
+}
+
+function nullableString(value: unknown): string | null {
+  if (value == null) return null;
+  const normalized = String(value).trim();
+  return normalized ? normalized : null;
+}
+
+function nullableNumber(value: unknown): number | null {
+  if (value == null || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function matchesDashboardFilter(evaluation: Evaluation, filter?: DashboardFilter) {

@@ -121,11 +121,12 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
                 evaluationGroupId,
                 form.Id,
                 request.Respostas,
-                form.Questions.ToArray());
+                form.Questions.ToArray(),
+                request.Observacoes);
         }
         else
         {
-            evaluation = new Evaluation(patient.Id, actorUserId, evaluationGroupId, request.Respostas);
+            evaluation = new Evaluation(patient.Id, actorUserId, evaluationGroupId, request.Respostas, request.Observacoes);
         }
 
         if (actor.OrganizationId.HasValue)

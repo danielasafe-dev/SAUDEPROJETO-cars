@@ -1,4 +1,5 @@
-﻿using SPI.Application.DTOs.Dashboard;
+using SPI.Application.DTOs.Dashboard;
+using SPI.Application.DTOs.Groups;
 using SPI.Application.Interfaces;
 using SPI.Application.Mappings;
 using SPI.Application.Services.Access;
@@ -37,6 +38,7 @@ public sealed class DashboardAppService : IDashboardAppService
         string? especialista = null,
         DateTime? dataInicio = null,
         DateTime? dataFim = null,
+        int? grupoId = null,
         CancellationToken cancellationToken = default)
     {
         var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
@@ -52,7 +54,7 @@ public sealed class DashboardAppService : IDashboardAppService
             var users = await _userRepository.ListAsync(cancellationToken);
             var patients = await _patientRepository.ListAsync(cancellationToken);
             var evaluations = await _evaluationRepository.ListDetailedAsync(cancellationToken);
-            var filteredEvaluations = ApplyFilters(evaluations, risco, especialista, dataInicio, dataFim);
+            var filteredEvaluations = ApplyFilters(evaluations, risco, especialista, dataInicio, dataFim, grupoId);
             var forms = await _formRepository.ListAsync(cancellationToken);
             var groups = await _groupRepository.ListAsync(cancellationToken);
 
@@ -95,7 +97,7 @@ public sealed class DashboardAppService : IDashboardAppService
                 cancellationToken);
         }
 
-        var filteredScopedEvaluations = ApplyFilters(scopedEvaluations, risco, especialista, dataInicio, dataFim);
+        var filteredScopedEvaluations = ApplyFilters(scopedEvaluations, risco, especialista, dataInicio, dataFim, grupoId);
 
         return new DashboardResponseDto
         {
@@ -109,14 +111,41 @@ public sealed class DashboardAppService : IDashboardAppService
         };
     }
 
+    public async Task<IReadOnlyCollection<GroupResponseDto>> ListFilterGroupsAsync(int actorUserId, CancellationToken cancellationToken = default)
+    {
+        var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
+            ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
+
+        if (actor.Role != UserRole.Analyst)
+        {
+            return [];
+        }
+
+        var groups = actor.OrganizationId.HasValue
+            ? await _groupRepository.ListByOrganizationIdAsync(actor.OrganizationId.Value, cancellationToken)
+            : await _groupRepository.ListAsync(cancellationToken);
+
+        return groups
+            .Where(x => x.Ativo)
+            .OrderBy(x => x.Nome)
+            .Select(x => x.ToDto())
+            .ToArray();
+    }
+
     private static IReadOnlyCollection<EvaluationDetails> ApplyFilters(
         IEnumerable<EvaluationDetails> evaluations,
         string? risco,
         string? especialista,
         DateTime? dataInicio,
-        DateTime? dataFim)
+        DateTime? dataFim,
+        int? grupoId)
     {
         var query = evaluations;
+
+        if (grupoId.HasValue && grupoId.Value > 0)
+        {
+            query = query.Where(x => x.GroupId == grupoId.Value);
+        }
 
         if (!string.IsNullOrWhiteSpace(risco))
         {
@@ -247,6 +276,3 @@ public sealed class DashboardAppService : IDashboardAppService
         return evaluation.ScoreTotal > 29.5m ? "Moderado" : "Sem Sinais";
     }
 }
-
-
-

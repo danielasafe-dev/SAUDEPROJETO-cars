@@ -86,6 +86,13 @@ export default function EvaluationDetailPage() {
         onSaved={(referral) => setEvalData((current) => (current ? { ...current, referral } : current))}
       />
 
+      {evalData.observacoes ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Observacao do avaliador</h3>
+          <p className="whitespace-pre-wrap text-sm text-gray-700">{evalData.observacoes}</p>
+        </div>
+      ) : null}
+
       {/* Breakdown */}
       <div className="bg-white rounded-xl border border-gray-200 p-4">
         <h3 className="text-sm font-semibold text-gray-700 mb-3">Detalhamento por Dimensão</h3>

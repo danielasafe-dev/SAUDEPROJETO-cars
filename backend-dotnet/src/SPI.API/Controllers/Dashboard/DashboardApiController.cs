@@ -28,9 +28,17 @@ public sealed class DashboardController : ControllerBase
         [FromQuery] string? especialista,
         [FromQuery] DateTime? dataInicio,
         [FromQuery] DateTime? dataFim,
+        [FromQuery] int? grupoId,
         CancellationToken cancellationToken)
     {
-        var result = await _dashboardAppService.GetAsync(User.GetUserId(), risco, especialista, dataInicio, dataFim, cancellationToken);
+        var result = await _dashboardAppService.GetAsync(User.GetUserId(), risco, especialista, dataInicio, dataFim, grupoId, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("groups")]
+    public async Task<IActionResult> ListFilterGroups(CancellationToken cancellationToken)
+    {
+        var result = await _dashboardAppService.ListFilterGroupsAsync(User.GetUserId(), cancellationToken);
         return Ok(result);
     }
 
