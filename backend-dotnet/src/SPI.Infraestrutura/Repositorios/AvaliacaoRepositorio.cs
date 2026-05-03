@@ -23,6 +23,7 @@ public sealed class EvaluationRepository : IEvaluationRepository
             .ThenInclude(x => x.Group)
             .Include(x => x.Avaliador)
             .Include(x => x.FormTemplate)
+            .Include(x => x.Referral)
             .OrderByDescending(x => x.DataAvaliacao)
             .ToListAsync(cancellationToken);
 
@@ -44,6 +45,7 @@ public sealed class EvaluationRepository : IEvaluationRepository
             .ThenInclude(x => x.Group)
             .Include(x => x.Avaliador)
             .Include(x => x.FormTemplate)
+            .Include(x => x.Referral)
             .Where(x => groupIds.Contains(x.GroupId))
             .OrderByDescending(x => x.DataAvaliacao)
             .ToListAsync(cancellationToken);
@@ -59,6 +61,7 @@ public sealed class EvaluationRepository : IEvaluationRepository
             .ThenInclude(x => x.Group)
             .Include(x => x.Avaliador)
             .Include(x => x.FormTemplate)
+            .Include(x => x.Referral)
             .Where(x => x.OrganizationId == organizationId)
             .OrderByDescending(x => x.DataAvaliacao)
             .ToListAsync(cancellationToken);
@@ -74,6 +77,7 @@ public sealed class EvaluationRepository : IEvaluationRepository
             .ThenInclude(x => x.Group)
             .Include(x => x.Avaliador)
             .Include(x => x.FormTemplate)
+            .Include(x => x.Referral)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
         return evaluation is null ? null : Map(evaluation);
@@ -95,10 +99,21 @@ public sealed class EvaluationRepository : IEvaluationRepository
             .Include(x => x.Avaliador)
             .Include(x => x.FormTemplate)
             .ThenInclude(x => x.Questions)
+            .Include(x => x.Referral)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    public Task<Evaluation?> GetByIdWithReferralAsync(int id, CancellationToken cancellationToken = default) =>
+        _context.Evaluations
+            .Include(x => x.Patient)
+            .ThenInclude(x => x.Group)
+            .Include(x => x.Referral)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public Task AddAsync(Evaluation evaluation, CancellationToken cancellationToken = default) =>
         _context.Evaluations.AddAsync(evaluation, cancellationToken).AsTask();
+
+    public Task AddReferralAsync(EvaluationReferral referral, CancellationToken cancellationToken = default) =>
+        _context.EvaluationReferrals.AddAsync(referral, cancellationToken).AsTask();
 
     public void Remove(Evaluation evaluation) => _context.Evaluations.Remove(evaluation);
 
@@ -117,7 +132,19 @@ public sealed class EvaluationRepository : IEvaluationRepository
         ScoreTotal = evaluation.ScoreTotal,
         PesoTotal = evaluation.PesoTotal,
         Classificacao = evaluation.Classificacao,
-        DataAvaliacao = evaluation.DataAvaliacao
+        DataAvaliacao = evaluation.DataAvaliacao,
+        Referral = evaluation.Referral is null
+            ? null
+            : new EvaluationReferralDetails
+            {
+                Id = evaluation.Referral.Id,
+                EvaluationId = evaluation.Referral.EvaluationId,
+                PatientId = evaluation.Referral.PatientId,
+                Encaminhado = evaluation.Referral.Encaminhado,
+                Especialidade = evaluation.Referral.Especialidade,
+                CustoEstimado = evaluation.Referral.CustoEstimado,
+                CriadoEm = evaluation.Referral.CriadoEm
+            }
     };
 }
 

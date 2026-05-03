@@ -16,6 +16,18 @@ public sealed class EvaluationDetails
     public decimal PesoTotal { get; init; }
     public string Classificacao { get; init; } = string.Empty;
     public DateTime DataAvaliacao { get; init; }
+    public EvaluationReferralDetails? Referral { get; init; }
+}
+
+public sealed class EvaluationReferralDetails
+{
+    public int Id { get; init; }
+    public int EvaluationId { get; init; }
+    public int PatientId { get; init; }
+    public bool Encaminhado { get; init; }
+    public string? Especialidade { get; init; }
+    public decimal CustoEstimado { get; init; }
+    public DateTime CriadoEm { get; init; }
 }
 
 

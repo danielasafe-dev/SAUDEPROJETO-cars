@@ -202,7 +202,7 @@ export default function DashboardPage() {
               NEXOS · Dashboard Triagem
             </div>
             <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-gray-900">Indicadores gerenciais SPI</h2>
-            <p className="mt-1 text-sm text-gray-500">Base mockada via API a partir de {stats.fonte}</p>
+            <p className="mt-1 text-sm text-gray-500">Base integrada via API: {stats.fonte}</p>
 
             {activeChips.length ? (
               <div className="mt-3 flex flex-wrap gap-2">

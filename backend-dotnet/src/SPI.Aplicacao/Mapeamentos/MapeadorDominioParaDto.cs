@@ -75,7 +75,30 @@ public static class DomainToDtoMapper
         ScoreTotal = evaluation.ScoreTotal,
         PesoTotal = evaluation.PesoTotal,
         Classificacao = evaluation.Classificacao,
-        DataAvaliacao = evaluation.DataAvaliacao
+        DataAvaliacao = evaluation.DataAvaliacao,
+        Referral = evaluation.Referral?.ToDto()
+    };
+
+    public static EvaluationReferralResponseDto ToDto(this EvaluationReferralDetails referral) => new()
+    {
+        Id = referral.Id,
+        EvaluationId = referral.EvaluationId,
+        PatientId = referral.PatientId,
+        Encaminhado = referral.Encaminhado,
+        Especialidade = referral.Especialidade,
+        CustoEstimado = referral.CustoEstimado,
+        CriadoEm = referral.CriadoEm
+    };
+
+    public static EvaluationReferralResponseDto ToDto(this EvaluationReferral referral) => new()
+    {
+        Id = referral.Id,
+        EvaluationId = referral.EvaluationId,
+        PatientId = referral.PatientId,
+        Encaminhado = referral.Encaminhado,
+        Especialidade = referral.Especialidade,
+        CustoEstimado = referral.CustoEstimado,
+        CriadoEm = referral.CriadoEm
     };
 
     public static GroupResponseDto ToDto(this Group group) => new()

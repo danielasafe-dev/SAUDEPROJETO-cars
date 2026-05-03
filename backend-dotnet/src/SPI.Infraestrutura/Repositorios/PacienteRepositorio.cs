@@ -49,11 +49,18 @@ public sealed class PatientRepository : IPatientRepository
             .OrderBy(x => x.Nome)
             .ToListAsync(cancellationToken);
 
+    public Task<List<Patient>> ListReusableByOrganizationIdAsync(int organizationId, CancellationToken cancellationToken = default) =>
+        _context.Patients
+            .AsNoTracking()
+            .Include(x => x.Group)
+            .Where(x => x.OrganizationId == organizationId || x.OrganizationId == null)
+            .OrderBy(x => x.Nome)
+            .ToListAsync(cancellationToken);
+
     public Task AddAsync(Patient patient, CancellationToken cancellationToken = default) =>
         _context.Patients.AddAsync(patient, cancellationToken).AsTask();
 
     public void Remove(Patient patient) => _context.Patients.Remove(patient);
 }
-
 
 

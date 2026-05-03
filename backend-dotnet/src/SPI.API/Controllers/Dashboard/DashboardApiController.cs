@@ -23,9 +23,14 @@ public sealed class DashboardController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> Get(CancellationToken cancellationToken)
+    public async Task<IActionResult> Get(
+        [FromQuery] string? risco,
+        [FromQuery] string? especialista,
+        [FromQuery] DateTime? dataInicio,
+        [FromQuery] DateTime? dataFim,
+        CancellationToken cancellationToken)
     {
-        var result = await _dashboardAppService.GetAsync(User.GetUserId(), cancellationToken);
+        var result = await _dashboardAppService.GetAsync(User.GetUserId(), risco, especialista, dataInicio, dataFim, cancellationToken);
         return Ok(result);
     }
 

@@ -5,6 +5,7 @@ import type { Evaluation } from '@/types';
 import ScoreChart from '../components/ScoreChart';
 import { SPI_QUESTIONS } from '../utils/questions';
 import { ArrowLeft } from 'lucide-react';
+import EvaluationReferralDecision from '../components/EvaluationReferralDecision';
 
 export default function EvaluationDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -78,6 +79,12 @@ export default function EvaluationDetailPage() {
 
       {/* Radar */}
       <ScoreChart respostas={evalData.respostas} />
+
+      <EvaluationReferralDecision
+        evaluationId={evalData.id}
+        currentReferral={evalData.referral}
+        onSaved={(referral) => setEvalData((current) => (current ? { ...current, referral } : current))}
+      />
 
       {/* Breakdown */}
       <div className="bg-white rounded-xl border border-gray-200 p-4">

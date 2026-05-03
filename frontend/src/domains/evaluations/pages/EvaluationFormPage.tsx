@@ -7,6 +7,8 @@ import QuestionCard from '../components/QuestionCard';
 import { createEvaluation } from '@/domains/dashboard/api';
 import { getForms } from '@/domains/forms/api';
 import type { Formulario } from '@/domains/forms/types';
+import { getGroups } from '@/domains/groups/api';
+import type { Group } from '@/domains/groups/types';
 
 interface EvaluationFormPageProps {
   embedded?: boolean;
@@ -19,12 +21,14 @@ export default function EvaluationFormPage({ embedded = false, onCancel }: Evalu
   const navigate = useNavigate();
 
   const [formularios, setFormularios] = useState<Formulario[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [selectedFormId, setSelectedFormId] = useState<number | null>(null);
   const [activeQuestions, setActiveQuestions] = useState<Question[]>([]);
   const [formIdToSend, setFormIdToSend] = useState<number | undefined>(undefined);
 
   const [mode, setMode] = useState<'existing' | 'new'>('existing');
   const [existingPatientId, setExistingPatientId] = useState<number | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [newName, setNewName] = useState('');
   const [answers, setAnswers] = useState<EvaluationAnswers>({});
   const [loading, setLoading] = useState(false);
@@ -32,6 +36,14 @@ export default function EvaluationFormPage({ embedded = false, onCancel }: Evalu
 
   useEffect(() => {
     getForms().catch(() => []).then(setFormularios);
+    getGroups()
+      .catch(() => [])
+      .then((items) => {
+        setGroups(items);
+        if (items.length === 1) {
+          setSelectedGroupId(items[0].id);
+        }
+      });
   }, []);
 
   function selectForm(formId: number) {
@@ -45,6 +57,9 @@ export default function EvaluationFormPage({ embedded = false, onCancel }: Evalu
     } else {
       const form = formularios.find((f) => f.id === formId);
       if (form) {
+        if (form.groupId) {
+          setSelectedGroupId(form.groupId);
+        }
         const questions: Question[] = form.perguntas
           .sort((a, b) => a.ordem - b.ordem)
           .map((p, idx) => {
@@ -81,16 +96,20 @@ export default function EvaluationFormPage({ embedded = false, onCancel }: Evalu
       setError(`Faltam ${total - answered} questao(oes) para responder.`);
       return;
     }
+    if (!selectedGroupId) {
+      setError('Selecione o grupo responsavel por esta avaliacao.');
+      return;
+    }
 
     setError('');
     setLoading(true);
     try {
       const pid = mode === 'existing' ? existingPatientId! : Date.now();
-      await createEvaluation({ patientId: pid, respostas: answers, formId: formIdToSend });
+      const createdEvaluation = await createEvaluation({ patientId: pid, respostas: answers, formId: formIdToSend, groupId: selectedGroupId });
       const score = calcScore(answers);
       const classification = getClassification(score);
       navigate('/resultado', {
-        state: { ...classification, patientId: pid, patientNome: mode === 'new' ? newName : undefined, answers },
+        state: { ...classification, evaluationId: createdEvaluation.id, patientId: pid, patientNome: createdEvaluation.patientNome ?? (mode === 'new' ? newName : undefined), answers },
       });
     } catch {
       setError('Erro ao salvar avaliacao');
@@ -220,6 +239,23 @@ export default function EvaluationFormPage({ embedded = false, onCancel }: Evalu
             placeholder="Nome completo do paciente"
           />
         )}
+
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700">Grupo responsavel pela avaliacao</label>
+          <select
+            value={selectedGroupId ?? ''}
+            onChange={(event) => setSelectedGroupId(Number(event.target.value) || null)}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Selecione o grupo</option>
+            {groups.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.nome}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500">O paciente pode ser reutilizado, mas a avaliacao ficara vinculada a este grupo.</p>
+        </div>
       </div>
 
       {/* Perguntas */}
@@ -270,7 +306,7 @@ function ExistingPatientSelector({ value, onChange }: { value: number | null; on
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    import('@/domains/patients/api').then(({ getPatients }) => getPatients().then(setPatients));
+    import('@/domains/patients/api').then(({ getReusablePatients }) => getReusablePatients().then(setPatients));
   }, []);
 
   const filtered = patients.filter((p) => p.nome.toLowerCase().includes(search.toLowerCase()));

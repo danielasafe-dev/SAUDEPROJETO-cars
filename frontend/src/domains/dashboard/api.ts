@@ -1,6 +1,6 @@
 import { isMockMode } from '@/shared/api/client';
 import { mockEvaluations as evals } from '@/shared/api/mockData';
-import type { Evaluation } from '@/types';
+import type { Evaluation, EvaluationReferral } from '@/types';
 
 export interface DashboardDistributionItem {
   label: string;
@@ -60,6 +60,24 @@ export interface SpiMockSusDashboard {
   ultimasTriagens: SpiMockSusTriage[];
 }
 
+interface SystemDashboardSummary {
+  triagens?: {
+    totalPacientes: number;
+    totalTriagens: number;
+    scoreMedio: number;
+    menorScore: number;
+    maiorScore: number;
+    encaminhados: number;
+    consultasEvitadas: number;
+    economiaFinanceiraEstimada: number;
+    casosSeveros: number;
+    taxaEncaminhamento: number;
+    distribuicaoTriagensMensais: DashboardDistributionItem[];
+    distribuicaoRisco: DashboardDistributionItem[];
+    distribuicaoEspecialista: DashboardDistributionItem[];
+  };
+}
+
 export type DashboardFilter = {
   risco?: string;
   especialista?: string;
@@ -69,7 +87,13 @@ export type DashboardFilter = {
 
 export async function getDashboardStats(filter?: DashboardFilter): Promise<SpiMockSusDashboard> {
   if (!isMockMode()) {
-    return (await import('@/shared/api/client')).api.get('/api/dashboard/spi-mock', { params: filter }).then((r) => r.data);
+    const { api } = await import('@/shared/api/client');
+    const [mockResponse, systemResponse] = await Promise.all([
+      api.get('/api/dashboard/spi-mock', { params: filter }),
+      api.get('/api/dashboard', { params: filter }),
+    ]);
+
+    return mergeSystemSummaryIntoDashboard(mockResponse.data, systemResponse.data);
   }
 
   const filteredEvals = evals.filter((e) => {
@@ -149,6 +173,26 @@ export async function getDashboardStats(filter?: DashboardFilter): Promise<SpiMo
   };
 }
 
+export async function saveEvaluationReferral(
+  evaluationId: number,
+  data: { encaminhado: boolean; especialidade?: string | null; custoEstimado?: number }
+): Promise<EvaluationReferral> {
+  if (isMockMode()) {
+    await new Promise((r) => setTimeout(r, 350));
+    return {
+      id: Date.now(),
+      evaluationId,
+      patientId: 0,
+      encaminhado: data.encaminhado,
+      especialidade: data.encaminhado ? data.especialidade ?? null : null,
+      custoEstimado: data.encaminhado ? data.custoEstimado ?? 1000 : 0,
+      criadoEm: new Date().toISOString(),
+    };
+  }
+
+  return (await import('@/shared/api/client')).api.put(`/api/evaluations/${evaluationId}/referral`, data).then((r) => r.data);
+}
+
 export async function getEvaluationDashboardStats() {
   if (isMockMode()) {
     await new Promise((r) => setTimeout(r, 300));
@@ -176,7 +220,7 @@ export async function getEvals(): Promise<Evaluation[]> {
   return (await import('@/shared/api/client')).api.get('/api/evaluations').then((r) => r.data);
 }
 
-export async function createEvaluation(data: { patientId: number; respostas: Record<number, number>; formId?: number }) {
+export async function createEvaluation(data: { patientId: number; respostas: Record<number, number>; formId?: number; groupId?: number }) {
   if (isMockMode()) {
     await new Promise((r) => setTimeout(r, 600));
     const total = Object.values(data.respostas).reduce((s, v) => s + v, 0);
@@ -194,4 +238,177 @@ export async function createEvaluation(data: { patientId: number; respostas: Rec
     } satisfies Evaluation;
   }
   return (await import('@/shared/api/client')).api.post('/api/evaluations', data).then((r) => r.data);
+}
+
+function mergeSystemEvaluationsIntoDashboard(base: SpiMockSusDashboard, evaluations: Evaluation[], filter?: DashboardFilter): SpiMockSusDashboard {
+  const filteredEvaluations = evaluations.filter((evaluation) => matchesDashboardFilter(evaluation, filter));
+  const totalTriagens = base.totalTriagens + filteredEvaluations.length;
+  const scores = filteredEvaluations.map((evaluation) => Number(evaluation.scoreTotal)).filter((value) => Number.isFinite(value));
+  const encaminhadas = filteredEvaluations.filter((evaluation) => evaluation.referral?.encaminhado).length;
+  const semEncaminhamento = filteredEvaluations.filter((evaluation) => evaluation.referral && !evaluation.referral.encaminhado).length;
+
+  const scoreSum = base.scoreMedio * base.totalTriagens + scores.reduce((sum, score) => sum + score, 0);
+  const scoreMedio = totalTriagens ? Math.round((scoreSum / totalTriagens) * 10) / 10 : 0;
+  const allScoreValues = [base.menorScore, base.maiorScore, ...scores].filter((value) => value > 0);
+
+  return {
+    ...base,
+    fonte: `${base.fonte} + sistema`,
+    aba: 'CSV + Avaliacoes',
+    totalTriagens,
+    totalPacientes: base.totalPacientes + new Set(filteredEvaluations.map((evaluation) => evaluation.patientId)).size,
+    scoreMedio,
+    menorScore: allScoreValues.length ? Math.min(...allScoreValues) : 0,
+    maiorScore: allScoreValues.length ? Math.max(...allScoreValues) : 0,
+    encaminhados: base.encaminhados + encaminhadas,
+    consultasEvitadas: base.consultasEvitadas + semEncaminhamento,
+    economiaFinanceiraEstimada: base.economiaFinanceiraEstimada + semEncaminhamento * base.custoMedioConsultaEspecializada,
+    casosSeveros: base.casosSeveros + filteredEvaluations.filter((evaluation) => classifyRiskLabel(evaluation) === 'Severo').length,
+    taxaEncaminhamento: totalTriagens ? Math.round(((base.encaminhados + encaminhadas) * 1000) / totalTriagens) / 10 : 0,
+    distribuicaoTriagensMensais: mergeDistribution(base.distribuicaoTriagensMensais, monthlyDistributionFromEvaluations(filteredEvaluations)),
+    distribuicaoRisco: mergeDistribution(base.distribuicaoRisco, riskDistributionFromEvaluations(filteredEvaluations), ['Severo', 'Moderado', 'Leve', 'Sem Sinais']),
+    distribuicaoEspecialista: mergeDistribution(base.distribuicaoEspecialista, specialtyDistributionFromEvaluations(filteredEvaluations)).slice(0, 6),
+    ultimasTriagens: [
+      ...filteredEvaluations
+        .slice()
+        .sort((left, right) => new Date(right.dataAvaliacao).getTime() - new Date(left.dataAvaliacao).getTime())
+        .slice(0, 6)
+        .map((evaluation) => ({
+          idPaciente: String(evaluation.patientId),
+          nomeCrianca: evaluation.patientNome,
+          idadeAnos: null,
+          sexo: '',
+          dataTriagem: evaluation.dataAvaliacao,
+          scoreTriagem: Number(evaluation.scoreTotal),
+          nivelRisco: classifyRiskLabel(evaluation),
+          encaminhado: Boolean(evaluation.referral?.encaminhado),
+          statusConsulta: evaluation.referral?.encaminhado ? 'Encaminhada' : evaluation.referral ? 'Sem encaminhamento' : 'Sem decisao',
+          diagnosticoConfirmado: 'Pendente',
+        })),
+      ...base.ultimasTriagens,
+    ]
+      .sort((left, right) => new Date(right.dataTriagem ?? '').getTime() - new Date(left.dataTriagem ?? '').getTime())
+      .slice(0, 6),
+  };
+}
+
+function mergeSystemSummaryIntoDashboard(base: SpiMockSusDashboard, system: SystemDashboardSummary): SpiMockSusDashboard {
+  const summary = system.triagens;
+  if (!summary || summary.totalTriagens <= 0) {
+    return base;
+  }
+
+  const totalTriagens = base.totalTriagens + summary.totalTriagens;
+  const scoreMedio = totalTriagens
+    ? Math.round(((base.scoreMedio * base.totalTriagens + Number(summary.scoreMedio) * summary.totalTriagens) / totalTriagens) * 10) / 10
+    : 0;
+  const scoreValues = [base.menorScore, base.maiorScore, Number(summary.menorScore), Number(summary.maiorScore)].filter((value) => value > 0);
+
+  return {
+    ...base,
+    fonte: `${base.fonte} + sistema`,
+    aba: 'CSV + Resumo gerencial',
+    totalPacientes: base.totalPacientes + summary.totalPacientes,
+    totalTriagens,
+    scoreMedio,
+    menorScore: scoreValues.length ? Math.min(...scoreValues) : 0,
+    maiorScore: scoreValues.length ? Math.max(...scoreValues) : 0,
+    encaminhados: base.encaminhados + summary.encaminhados,
+    consultasEvitadas: base.consultasEvitadas + summary.consultasEvitadas,
+    economiaFinanceiraEstimada: base.economiaFinanceiraEstimada + Number(summary.economiaFinanceiraEstimada),
+    casosSeveros: base.casosSeveros + summary.casosSeveros,
+    taxaEncaminhamento: totalTriagens ? Math.round(((base.encaminhados + summary.encaminhados) * 1000) / totalTriagens) / 10 : 0,
+    distribuicaoTriagensMensais: mergeDistribution(base.distribuicaoTriagensMensais, summary.distribuicaoTriagensMensais),
+    distribuicaoRisco: mergeDistribution(base.distribuicaoRisco, summary.distribuicaoRisco, ['Severo', 'Moderado', 'Leve', 'Sem Sinais']),
+    distribuicaoEspecialista: mergeDistribution(base.distribuicaoEspecialista, summary.distribuicaoEspecialista).slice(0, 6),
+  };
+}
+
+function matchesDashboardFilter(evaluation: Evaluation, filter?: DashboardFilter) {
+  if (filter?.risco && classifyRiskLabel(evaluation).toLocaleLowerCase('pt-BR') !== filter.risco.toLocaleLowerCase('pt-BR')) {
+    return false;
+  }
+
+  if (filter?.especialista && evaluation.referral?.especialidade?.toLocaleLowerCase('pt-BR') !== filter.especialista.toLocaleLowerCase('pt-BR')) {
+    return false;
+  }
+
+  const evaluationDate = new Date(evaluation.dataAvaliacao);
+  if (filter?.dataInicio && evaluationDate < new Date(`${filter.dataInicio}T00:00:00`)) {
+    return false;
+  }
+
+  if (filter?.dataFim && evaluationDate > new Date(`${filter.dataFim}T23:59:59`)) {
+    return false;
+  }
+
+  return true;
+}
+
+function classifyRiskLabel(evaluation: Evaluation) {
+  const classification = evaluation.classificacao.toLocaleLowerCase('pt-BR');
+  if (classification.includes('grave')) return 'Severo';
+  if (classification.includes('moderado')) return 'Moderado';
+  if (classification.includes('leve')) return 'Leve';
+  if (classification.includes('sem')) return 'Sem Sinais';
+  const score = Number(evaluation.scoreTotal);
+  if (score >= 37) return 'Severo';
+  if (score > 29.5) return 'Moderado';
+  return 'Sem Sinais';
+}
+
+function monthlyDistributionFromEvaluations(evaluations: Evaluation[]) {
+  const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+  return Object.values(
+    evaluations.reduce<Record<string, DashboardDistributionItem>>((acc, evaluation) => {
+      const date = new Date(evaluation.dataAvaliacao);
+      const label = `${months[date.getMonth()]}/${String(date.getFullYear()).slice(-2)}`;
+      acc[label] = acc[label] ?? { label, value: 0 };
+      acc[label].value += 1;
+      return acc;
+    }, {})
+  );
+}
+
+function riskDistributionFromEvaluations(evaluations: Evaluation[]) {
+  return Object.values(
+    evaluations.reduce<Record<string, DashboardDistributionItem>>((acc, evaluation) => {
+      const label = classifyRiskLabel(evaluation);
+      acc[label] = acc[label] ?? { label, value: 0 };
+      acc[label].value += 1;
+      return acc;
+    }, {})
+  );
+}
+
+function specialtyDistributionFromEvaluations(evaluations: Evaluation[]) {
+  return Object.values(
+    evaluations.reduce<Record<string, DashboardDistributionItem>>((acc, evaluation) => {
+      const label = evaluation.referral?.encaminhado ? evaluation.referral.especialidade : null;
+      if (!label) return acc;
+      acc[label] = acc[label] ?? { label, value: 0 };
+      acc[label].value += 1;
+      return acc;
+    }, {})
+  );
+}
+
+function mergeDistribution(base: DashboardDistributionItem[], extra: DashboardDistributionItem[], preferredOrder?: string[]) {
+  const map = new Map<string, DashboardDistributionItem>();
+  [...base, ...extra].forEach((item) => {
+    const key = item.label.toLocaleLowerCase('pt-BR');
+    const current = map.get(key);
+    map.set(key, { label: current?.label ?? item.label, value: (current?.value ?? 0) + item.value });
+  });
+
+  const merged = Array.from(map.values());
+  if (!preferredOrder) {
+    return merged.sort((left, right) => right.value - left.value || left.label.localeCompare(right.label));
+  }
+
+  return merged.sort((left, right) => {
+    const leftIndex = preferredOrder.findIndex((label) => label.toLocaleLowerCase('pt-BR') === left.label.toLocaleLowerCase('pt-BR'));
+    const rightIndex = preferredOrder.findIndex((label) => label.toLocaleLowerCase('pt-BR') === right.label.toLocaleLowerCase('pt-BR'));
+    return (leftIndex === -1 ? Number.MAX_SAFE_INTEGER : leftIndex) - (rightIndex === -1 ? Number.MAX_SAFE_INTEGER : rightIndex);
+  });
 }

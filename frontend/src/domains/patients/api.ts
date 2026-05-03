@@ -26,6 +26,16 @@ export async function getPatients(): Promise<Patient[]> {
   return Array.isArray(data) ? data.map(normalizePatient) : [];
 }
 
+export async function getReusablePatients(): Promise<Patient[]> {
+  if (isMockMode()) {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    return mockPatients.map(normalizePatient);
+  }
+
+  const { data } = await api.get('/api/patients/reusable');
+  return Array.isArray(data) ? data.map(normalizePatient) : [];
+}
+
 export async function createPatient(data: CreatePatientInput): Promise<Patient> {
   if (isMockMode()) {
     await new Promise((resolve) => setTimeout(resolve, 300));

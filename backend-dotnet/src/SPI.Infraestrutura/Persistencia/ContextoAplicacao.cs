@@ -18,13 +18,13 @@ public sealed class AppDbContext : DbContext, IUnitOfWork
     public DbSet<FormTemplate> FormTemplates => Set<FormTemplate>();
     public DbSet<FormQuestion> FormQuestions => Set<FormQuestion>();
     public DbSet<Evaluation> Evaluations => Set<Evaluation>();
+    public DbSet<EvaluationReferral> EvaluationReferrals => Set<EvaluationReferral>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
 }
-
 
 
 

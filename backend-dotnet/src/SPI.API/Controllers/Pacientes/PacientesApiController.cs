@@ -25,6 +25,13 @@ public sealed class PatientsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("reusable")]
+    public async Task<IActionResult> ListReusable(CancellationToken cancellationToken)
+    {
+        var result = await _patientsAppService.ListReusableAsync(User.GetUserId(), cancellationToken);
+        return Ok(result);
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreatePatientRequestDto request, CancellationToken cancellationToken)
     {

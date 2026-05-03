@@ -10,10 +10,23 @@ namespace SPI.Application.Services;
 
 public sealed class EvaluationsAppService : IEvaluationsAppService
 {
+    private const decimal DefaultReferralCost = 1000m;
+    private static readonly HashSet<string> AllowedReferralSpecialties = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Terapeuta Ocupacional",
+        "Fonoaudiologo",
+        "Fonoaudiólogo",
+        "Psiquiatra Infantil",
+        "Psicologo Infantil",
+        "Psicólogo Infantil",
+        "Neuropediatra"
+    };
+
     private readonly IEvaluationRepository _evaluationRepository;
     private readonly IPatientRepository _patientRepository;
     private readonly IUserRepository _userRepository;
     private readonly IFormRepository _formRepository;
+    private readonly IGroupRepository _groupRepository;
     private readonly IUnitOfWork _unitOfWork;
 
     public EvaluationsAppService(
@@ -21,12 +34,14 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
         IPatientRepository patientRepository,
         IUserRepository userRepository,
         IFormRepository formRepository,
+        IGroupRepository groupRepository,
         IUnitOfWork unitOfWork)
     {
         _evaluationRepository = evaluationRepository;
         _patientRepository = patientRepository;
         _userRepository = userRepository;
         _formRepository = formRepository;
+        _groupRepository = groupRepository;
         _unitOfWork = unitOfWork;
     }
 
@@ -81,35 +96,45 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
         var patient = await _patientRepository.GetByIdAsync(request.ResolvePatientId(), cancellationToken)
             ?? throw new KeyNotFoundException("Paciente nao encontrado.");
 
-        EnsureCanAccessGroup(actor, patient.GroupId, allowManagedOnly: false);
+        EnsureCanUsePatient(actor, patient);
 
         Evaluation evaluation;
+        FormTemplate? form = null;
         if (request.FormId.HasValue && request.FormId.Value > 0)
         {
-            var form = await _formRepository.GetDetailedByIdAsync(request.FormId.Value, cancellationToken)
+            form = await _formRepository.GetDetailedByIdAsync(request.FormId.Value, cancellationToken)
                 ?? throw new KeyNotFoundException("Formulario nao encontrado.");
 
             if (form.GroupId.HasValue)
             {
                 EnsureCanAccessGroup(actor, form.GroupId.Value, allowManagedOnly: false);
             }
+        }
 
+        var evaluationGroupId = await ResolveEvaluationGroupIdAsync(actor, request.GroupId, form?.GroupId, patient.GroupId, cancellationToken);
+
+        if (form is not null)
+        {
             evaluation = new Evaluation(
                 patient.Id,
                 actorUserId,
-                patient.GroupId,
+                evaluationGroupId,
                 form.Id,
                 request.Respostas,
                 form.Questions.ToArray());
         }
         else
         {
-            evaluation = new Evaluation(patient.Id, actorUserId, patient.GroupId, request.Respostas);
+            evaluation = new Evaluation(patient.Id, actorUserId, evaluationGroupId, request.Respostas);
         }
 
-        if (actor.Role == UserRole.Admin && actor.OrganizationId.HasValue)
+        if (actor.OrganizationId.HasValue)
         {
             evaluation.AssignOrganization(actor.OrganizationId.Value);
+        }
+        else if (patient.OrganizationId.HasValue)
+        {
+            evaluation.AssignOrganization(patient.OrganizationId.Value);
         }
 
         await _evaluationRepository.AddAsync(evaluation, cancellationToken);
@@ -119,6 +144,68 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
             ?? throw new InvalidOperationException("Nao foi possivel recuperar a avaliacao apos salvar.");
 
         return created.ToDto();
+    }
+
+    public async Task<EvaluationReferralResponseDto> SaveReferralAsync(
+        int id,
+        SaveEvaluationReferralRequestDto request,
+        int actorUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = await GetActorAsync(actorUserId, cancellationToken);
+        if (!actor.Role.CanEvaluate())
+        {
+            throw new UnauthorizedAccessException("Usuario sem permissao para registrar encaminhamento.");
+        }
+
+        var evaluation = await _evaluationRepository.GetByIdWithReferralAsync(id, cancellationToken)
+            ?? throw new KeyNotFoundException("Avaliacao nao encontrada.");
+
+        EnsureCanAccessGroup(actor, evaluation.GroupId, allowManagedOnly: false);
+
+        var specialty = NormalizeSpecialty(request.Especialidade);
+        if (request.Encaminhado && string.IsNullOrWhiteSpace(specialty))
+        {
+            throw new InvalidOperationException("Selecione a especialidade do encaminhamento.");
+        }
+
+        if (request.Encaminhado && !AllowedReferralSpecialties.Contains(specialty!))
+        {
+            throw new InvalidOperationException("Especialidade de encaminhamento invalida.");
+        }
+
+        var cost = request.Encaminhado ? request.CustoEstimado.GetValueOrDefault(DefaultReferralCost) : 0;
+        if (request.Encaminhado && cost <= 0)
+        {
+            cost = DefaultReferralCost;
+        }
+
+        EvaluationReferral referral;
+        if (evaluation.Referral is null)
+        {
+            referral = new EvaluationReferral(
+                evaluation.Id,
+                evaluation.PatientId,
+                actorUserId,
+                request.Encaminhado,
+                specialty,
+                cost);
+
+            if (evaluation.OrganizationId.HasValue)
+            {
+                referral.AssignOrganization(evaluation.OrganizationId.Value);
+            }
+
+            await _evaluationRepository.AddReferralAsync(referral, cancellationToken);
+        }
+        else
+        {
+            referral = evaluation.Referral;
+            referral.UpdateDecision(request.Encaminhado, specialty, cost);
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return referral.ToDto();
     }
 
     public async Task DeleteAsync(int id, int actorUserId, CancellationToken cancellationToken = default)
@@ -205,6 +292,67 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
         {
             throw new UnauthorizedAccessException("Usuario sem permissao para acessar este grupo.");
         }
+    }
+
+    private static void EnsureCanUsePatient(User actor, Patient patient)
+    {
+        if (actor.Role == UserRole.Admin)
+        {
+            return;
+        }
+
+        if (actor.OrganizationId.HasValue && patient.OrganizationId.HasValue && actor.OrganizationId.Value != patient.OrganizationId.Value)
+        {
+            throw new UnauthorizedAccessException("Usuario sem permissao para usar este paciente.");
+        }
+    }
+
+    private async Task<int> ResolveEvaluationGroupIdAsync(
+        User actor,
+        int? requestedGroupId,
+        int? formGroupId,
+        int patientGroupId,
+        CancellationToken cancellationToken)
+    {
+        var accessScope = AccessScopeResolver.Resolve(actor);
+        var groupId = requestedGroupId.GetValueOrDefault() > 0
+            ? requestedGroupId!.Value
+            : formGroupId.GetValueOrDefault() > 0
+                ? formGroupId!.Value
+                : accessScope.OperationalGroupIds.Count == 1
+                    ? accessScope.OperationalGroupIds.Single()
+                    : patientGroupId;
+
+        if (!accessScope.IsAdmin && !accessScope.OperationalGroupIds.Contains(groupId))
+        {
+            throw new UnauthorizedAccessException("Usuario sem permissao para registrar avaliacao neste grupo.");
+        }
+
+        var group = await _groupRepository.GetByIdAsync(groupId, cancellationToken)
+            ?? throw new KeyNotFoundException("Grupo da avaliacao nao encontrado.");
+
+        if (actor.OrganizationId.HasValue && group.OrganizationId.HasValue && actor.OrganizationId.Value != group.OrganizationId.Value)
+        {
+            throw new UnauthorizedAccessException("Grupo da avaliacao pertence a outra organizacao.");
+        }
+
+        return group.Id;
+    }
+
+    private static string? NormalizeSpecialty(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var normalized = value.Trim();
+        return normalized switch
+        {
+            "Fonoaudiologo" => "Fonoaudiólogo",
+            "Psicologo Infantil" => "Psicólogo Infantil",
+            _ => normalized
+        };
     }
 }
 

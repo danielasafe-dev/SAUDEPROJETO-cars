@@ -13,9 +13,10 @@ public interface IEvaluationRepository
     Task<bool> AnyByPatientIdAsync(int patientId, CancellationToken cancellationToken = default);
     Task<Evaluation?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<Evaluation?> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default);
+    Task<Evaluation?> GetByIdWithReferralAsync(int id, CancellationToken cancellationToken = default);
     Task AddAsync(Evaluation evaluation, CancellationToken cancellationToken = default);
+    Task AddReferralAsync(EvaluationReferral referral, CancellationToken cancellationToken = default);
     void Remove(Evaluation evaluation);
 }
-
 
 

@@ -47,6 +47,17 @@ export interface Evaluation {
   scoreTotal: number;
   classificacao: string;
   dataAvaliacao: string;
+  referral?: EvaluationReferral | null;
+}
+
+export interface EvaluationReferral {
+  id: number;
+  evaluationId: number;
+  patientId: number;
+  encaminhado: boolean;
+  especialidade: string | null;
+  custoEstimado: number;
+  criadoEm: string;
 }
 
 export interface DashboardStats {

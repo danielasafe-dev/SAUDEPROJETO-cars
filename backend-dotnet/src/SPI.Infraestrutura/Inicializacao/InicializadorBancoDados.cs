@@ -26,6 +26,7 @@ public static class DatabaseInitializer
             await context.Database.EnsureCreatedAsync(cancellationToken);
             await EnsureSqlitePatientColumnsAsync(context, cancellationToken);
             await EnsureSqliteOrganizationColumnsAsync(context, cancellationToken);
+            await EnsureSqliteEvaluationReferralTableAsync(context, cancellationToken);
         }
         else if (databaseInitializationOptions.ApplyMigrationsOnStartup)
         {
@@ -154,6 +155,33 @@ public static class DatabaseInitializer
                 await context.Database.ExecuteSqlRawAsync(sql, cancellationToken);
             }
         }
+    }
+
+    private static async Task EnsureSqliteEvaluationReferralTableAsync(AppDbContext context, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            CREATE TABLE IF NOT EXISTS evaluation_referrals (
+                id INTEGER NOT NULL CONSTRAINT PK_evaluation_referrals PRIMARY KEY AUTOINCREMENT,
+                evaluation_id INTEGER NOT NULL,
+                patient_id INTEGER NOT NULL,
+                encaminhado INTEGER NOT NULL,
+                especialidade TEXT NULL,
+                custo_estimado TEXT NOT NULL DEFAULT '0',
+                criado_em TEXT NOT NULL,
+                criado_por_usuario_id INTEGER NOT NULL,
+                organization_id INTEGER NULL,
+                CONSTRAINT FK_evaluation_referrals_evaluations_evaluation_id FOREIGN KEY (evaluation_id) REFERENCES evaluations(id) ON DELETE CASCADE,
+                CONSTRAINT FK_evaluation_referrals_patients_patient_id FOREIGN KEY (patient_id) REFERENCES patients(id),
+                CONSTRAINT FK_evaluation_referrals_users_criado_por_usuario_id FOREIGN KEY (criado_por_usuario_id) REFERENCES users(id),
+                CONSTRAINT FK_evaluation_referrals_organizations_organization_id FOREIGN KEY (organization_id) REFERENCES organizations(id)
+            );
+
+            CREATE UNIQUE INDEX IF NOT EXISTS IX_evaluation_referrals_evaluation_id ON evaluation_referrals(evaluation_id);
+            CREATE INDEX IF NOT EXISTS IX_evaluation_referrals_patient_id ON evaluation_referrals(patient_id);
+            CREATE INDEX IF NOT EXISTS IX_evaluation_referrals_especialidade ON evaluation_referrals(especialidade);
+            """;
+
+        await context.Database.ExecuteSqlRawAsync(sql, cancellationToken);
     }
 
     private static async Task EnsureSeedAdminOrganizationAsync(

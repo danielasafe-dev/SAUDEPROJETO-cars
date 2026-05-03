@@ -1,12 +1,14 @@
 ﻿import { useLocation, useNavigate, Link } from 'react-router-dom';
 import ScoreChart from '../components/ScoreChart';
 import { SPI_QUESTIONS } from '../utils/questions';
+import EvaluationReferralDecision from '../components/EvaluationReferralDecision';
 
 interface ResultState {
   score: number;
   classification: string;
   color: string;
   cls: string;
+  evaluationId?: number;
   patientId: number;
   answers: Record<number, number>;
 }
@@ -20,7 +22,7 @@ export default function EvaluationResultPage() {
     return null;
   }
 
-  const { score, classification, color, cls, answers }: ResultState = state;
+  const { score, classification, color, cls, evaluationId, answers }: ResultState = state;
   const labels = ['Normal', 'Leve', 'Moderado', 'Grave'];
 
   return (
@@ -46,6 +48,8 @@ export default function EvaluationResultPage() {
       </div>
 
       <ScoreChart respostas={answers} />
+
+      <EvaluationReferralDecision evaluationId={evaluationId} />
 
       <div className="rounded-xl border border-gray-200 bg-white p-4">
         <h3 className="mb-3 text-sm font-semibold text-gray-700">Detalhamento por Dimensao</h3>

@@ -104,10 +104,10 @@ public sealed class Evaluation : Entity, IAggregateRoot
     public User Avaliador { get; private set; } = null!;
     public Group Group { get; private set; } = null!;
     public FormTemplate? FormTemplate { get; private set; }
+    public EvaluationReferral? Referral { get; private set; }
     public Organization? Organization { get; private set; }
 
     public void AssignOrganization(int organizationId) => OrganizationId = organizationId;
 }
-
 
 

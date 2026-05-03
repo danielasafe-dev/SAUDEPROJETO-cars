@@ -33,6 +33,11 @@ public sealed class PatientsAppService : IPatientsAppService
 
     public async Task<IReadOnlyCollection<PatientResponseDto>> ListAsync(int actorUserId, CancellationToken cancellationToken = default)
     {
+        return await ListReusableAsync(actorUserId, cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<PatientResponseDto>> ListReusableAsync(int actorUserId, CancellationToken cancellationToken = default)
+    {
         var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
             ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
 
@@ -43,13 +48,17 @@ public sealed class PatientsAppService : IPatientsAppService
 
         var accessScope = AccessScopeResolver.Resolve(actor);
         List<SPI.Domain.Entities.Patient> patients;
-        if (accessScope.IsAdmin && accessScope.OrganizationId.HasValue)
+        if (accessScope.OrganizationId.HasValue)
         {
-            patients = await _patientRepository.ListByOrganizationIdAsync(accessScope.OrganizationId.Value, cancellationToken);
+            patients = await _patientRepository.ListReusableByOrganizationIdAsync(accessScope.OrganizationId.Value, cancellationToken);
+        }
+        else if (accessScope.IsAdmin)
+        {
+            patients = await _patientRepository.ListAsync(cancellationToken);
         }
         else
         {
-            patients = await _patientRepository.ListByGroupIdsAsync(accessScope.OperationalGroupIds, cancellationToken);
+            patients = await _patientRepository.ListAsync(cancellationToken);
         }
 
         return patients.Select(x => x.ToDto()).ToList();
@@ -88,7 +97,7 @@ public sealed class PatientsAppService : IPatientsAppService
             request.Observacoes,
             actorUserId,
             group.Id);
-        if (accessScope.IsAdmin && accessScope.OrganizationId.HasValue)
+        if (accessScope.OrganizationId.HasValue)
         {
             patient.AssignOrganization(accessScope.OrganizationId.Value);
         }

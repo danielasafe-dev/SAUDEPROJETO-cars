@@ -39,6 +39,13 @@ public sealed class EvaluationsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPut("{id:int}/referral")]
+    public async Task<IActionResult> SaveReferral(int id, [FromBody] SaveEvaluationReferralRequestDto request, CancellationToken cancellationToken)
+    {
+        var result = await _evaluationsAppService.SaveReferralAsync(id, request, User.GetUserId(), cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
