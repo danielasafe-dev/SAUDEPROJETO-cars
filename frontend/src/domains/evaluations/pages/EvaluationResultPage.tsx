@@ -1,4 +1,4 @@
-﻿import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import ScoreChart from '../components/ScoreChart';
 import { SPI_QUESTIONS } from '../utils/questions';
 import EvaluationReferralDecision from '../components/EvaluationReferralDecision';
@@ -8,10 +8,10 @@ interface ResultState {
   classification: string;
   color: string;
   cls: string;
-  evaluationId?: number;
-  patientId: number;
+  evaluationId?: string;
+  patientId: string;
   observacoes?: string | null;
-  answers: Record<number, number>;
+  answers: Record<string, number>;
 }
 
 export default function EvaluationResultPage() {

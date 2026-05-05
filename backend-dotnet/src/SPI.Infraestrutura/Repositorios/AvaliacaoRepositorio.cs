@@ -1,4 +1,4 @@
-﻿using SPI.Domain.Entities;
+using SPI.Domain.Entities;
 using SPI.Domain.ReadModels;
 using SPI.Domain.Repositories;
 using SPI.Infrastructure.Data.Persistence;
@@ -31,7 +31,7 @@ public sealed class EvaluationRepository : IEvaluationRepository
     }
 
     public async Task<List<EvaluationDetails>> ListDetailedByGroupIdsAsync(
-        IReadOnlyCollection<int> groupIds,
+        IReadOnlyCollection<Guid> groupIds,
         CancellationToken cancellationToken = default)
     {
         if (groupIds.Count == 0)
@@ -53,7 +53,7 @@ public sealed class EvaluationRepository : IEvaluationRepository
         return evaluations.Select(Map).ToList();
     }
 
-    public async Task<List<EvaluationDetails>> ListDetailedByOrganizationIdAsync(int organizationId, CancellationToken cancellationToken = default)
+    public async Task<List<EvaluationDetails>> ListDetailedByOrganizationIdAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
         var evaluations = await _context.Evaluations
             .AsNoTracking()
@@ -69,7 +69,7 @@ public sealed class EvaluationRepository : IEvaluationRepository
         return evaluations.Select(Map).ToList();
     }
 
-    public async Task<EvaluationDetails?> GetDetailedByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<EvaluationDetails?> GetDetailedByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var evaluation = await _context.Evaluations
             .AsNoTracking()
@@ -83,16 +83,16 @@ public sealed class EvaluationRepository : IEvaluationRepository
         return evaluation is null ? null : Map(evaluation);
     }
 
-    public Task<bool> AnyByGroupIdAsync(int groupId, CancellationToken cancellationToken = default) =>
+    public Task<bool> AnyByGroupIdAsync(Guid groupId, CancellationToken cancellationToken = default) =>
         _context.Evaluations.AnyAsync(x => x.GroupId == groupId, cancellationToken);
 
-    public Task<bool> AnyByPatientIdAsync(int patientId, CancellationToken cancellationToken = default) =>
+    public Task<bool> AnyByPatientIdAsync(Guid patientId, CancellationToken cancellationToken = default) =>
         _context.Evaluations.AnyAsync(x => x.PatientId == patientId, cancellationToken);
 
-    public Task<Evaluation?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
+    public Task<Evaluation?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         _context.Evaluations.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
-    public Task<Evaluation?> GetByIdWithRelationsAsync(int id, CancellationToken cancellationToken = default) =>
+    public Task<Evaluation?> GetByIdWithRelationsAsync(Guid id, CancellationToken cancellationToken = default) =>
         _context.Evaluations
             .Include(x => x.Patient)
             .ThenInclude(x => x.Group)
@@ -102,7 +102,7 @@ public sealed class EvaluationRepository : IEvaluationRepository
             .Include(x => x.Referral)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
-    public Task<Evaluation?> GetByIdWithReferralAsync(int id, CancellationToken cancellationToken = default) =>
+    public Task<Evaluation?> GetByIdWithReferralAsync(Guid id, CancellationToken cancellationToken = default) =>
         _context.Evaluations
             .Include(x => x.Patient)
             .ThenInclude(x => x.Group)
@@ -128,7 +128,7 @@ public sealed class EvaluationRepository : IEvaluationRepository
         GroupNome = evaluation.Patient.Group.Nome,
         FormTemplateId = evaluation.FormTemplateId,
         FormNome = evaluation.FormTemplate?.Nome,
-        Respostas = new Dictionary<int, int>(evaluation.Respostas),
+        Respostas = new Dictionary<string, int>(evaluation.Respostas),
         ScoreTotal = evaluation.ScoreTotal,
         PesoTotal = evaluation.PesoTotal,
         Classificacao = evaluation.Classificacao,
@@ -142,6 +142,8 @@ public sealed class EvaluationRepository : IEvaluationRepository
                 EvaluationId = evaluation.Referral.EvaluationId,
                 PatientId = evaluation.Referral.PatientId,
                 Encaminhado = evaluation.Referral.Encaminhado,
+                SpecialistId = evaluation.Referral.SpecialistId,
+                SpecialistNome = evaluation.Referral.SpecialistNome,
                 Especialidade = evaluation.Referral.Especialidade,
                 CustoEstimado = evaluation.Referral.CustoEstimado,
                 CriadoEm = evaluation.Referral.CriadoEm

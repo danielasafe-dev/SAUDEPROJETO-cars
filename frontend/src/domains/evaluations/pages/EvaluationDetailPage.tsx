@@ -14,7 +14,7 @@ export default function EvaluationDetailPage() {
 
   useEffect(() => {
     getEvals().then((data: Evaluation[]) => {
-      const found = data.find((e: Evaluation) => e.id === Number(id));
+      const found = data.find((e: Evaluation) => e.id === id);
       setEvalData(found || null);
     });
   }, [id]);

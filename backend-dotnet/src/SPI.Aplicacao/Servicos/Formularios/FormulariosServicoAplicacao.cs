@@ -1,4 +1,4 @@
-﻿using SPI.Application.DTOs.Forms;
+using SPI.Application.DTOs.Forms;
 using SPI.Application.Interfaces;
 using SPI.Application.Mappings;
 using SPI.Application.Services.Access;
@@ -26,7 +26,7 @@ public sealed class FormsAppService : IFormsAppService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<IReadOnlyCollection<FormResponseDto>> ListAsync(int actorUserId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<FormResponseDto>> ListAsync(Guid actorUserId, CancellationToken cancellationToken = default)
     {
         var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
             ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
@@ -54,7 +54,7 @@ public sealed class FormsAppService : IFormsAppService
         return forms.Select(x => x.ToDto()).ToList();
     }
 
-    public async Task<FormResponseDto?> GetByIdAsync(int formId, int actorUserId, CancellationToken cancellationToken = default)
+    public async Task<FormResponseDto?> GetByIdAsync(Guid formId, Guid actorUserId, CancellationToken cancellationToken = default)
     {
         var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
             ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
@@ -74,7 +74,7 @@ public sealed class FormsAppService : IFormsAppService
         return form.ToDto();
     }
 
-    public async Task<FormResponseDto> CreateAsync(CreateFormRequestDto request, int actorUserId, CancellationToken cancellationToken = default)
+    public async Task<FormResponseDto> CreateAsync(CreateFormRequestDto request, Guid actorUserId, CancellationToken cancellationToken = default)
     {
         var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
             ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
@@ -114,7 +114,7 @@ public sealed class FormsAppService : IFormsAppService
         return created.ToDto();
     }
 
-    public async Task<FormResponseDto> UpdateAsync(int formId, UpdateFormRequestDto request, int actorUserId, CancellationToken cancellationToken = default)
+    public async Task<FormResponseDto> UpdateAsync(Guid formId, UpdateFormRequestDto request, Guid actorUserId, CancellationToken cancellationToken = default)
     {
         var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
             ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
@@ -151,7 +151,7 @@ public sealed class FormsAppService : IFormsAppService
         return updated.ToDto();
     }
 
-    private static void ValidateFormGroupAccess(UserRole role, int? groupId, AccessScope accessScope)
+    private static void ValidateFormGroupAccess(UserRole role, Guid? groupId, AccessScope accessScope)
     {
         if (accessScope.IsAdmin)
         {
@@ -173,7 +173,7 @@ public sealed class FormsAppService : IFormsAppService
         }
     }
 
-    private static void EnsureCanAccessForm(SPI.Domain.Entities.User actor, int? groupId)
+    private static void EnsureCanAccessForm(SPI.Domain.Entities.User actor, Guid? groupId)
     {
         if (actor.Role == UserRole.Analyst || actor.Role == UserRole.Admin || groupId is null)
         {

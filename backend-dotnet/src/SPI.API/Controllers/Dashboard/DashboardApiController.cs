@@ -1,4 +1,4 @@
-﻿using SPI.Api.Extensions;
+using SPI.Api.Extensions;
 using SPI.Api.Services;
 using SPI.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -28,7 +28,7 @@ public sealed class DashboardController : ControllerBase
         [FromQuery] string? especialista,
         [FromQuery] DateTime? dataInicio,
         [FromQuery] DateTime? dataFim,
-        [FromQuery] int? grupoId,
+        [FromQuery] Guid? grupoId,
         CancellationToken cancellationToken)
     {
         var result = await _dashboardAppService.GetAsync(User.GetUserId(), risco, especialista, dataInicio, dataFim, grupoId, cancellationToken);

@@ -6,15 +6,15 @@ namespace SPI.Application.Interfaces;
 public interface IDashboardAppService
 {
     Task<DashboardResponseDto> GetAsync(
-        int actorUserId,
+        Guid actorUserId,
         string? risco = null,
         string? especialista = null,
         DateTime? dataInicio = null,
         DateTime? dataFim = null,
-        int? grupoId = null,
+        Guid? grupoId = null,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyCollection<GroupResponseDto>> ListFilterGroupsAsync(
-        int actorUserId,
+        Guid actorUserId,
         CancellationToken cancellationToken = default);
 }

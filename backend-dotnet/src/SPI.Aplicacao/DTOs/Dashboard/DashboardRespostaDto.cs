@@ -1,4 +1,4 @@
-﻿using SPI.Application.DTOs.Evaluations;
+using SPI.Application.DTOs.Evaluations;
 
 namespace SPI.Application.DTOs.Dashboard;
 
@@ -23,6 +23,7 @@ public sealed class DashboardTriageSummaryDto
     public int Encaminhados { get; init; }
     public int ConsultasEvitadas { get; init; }
     public decimal EconomiaFinanceiraEstimada { get; init; }
+    public decimal CustoTotalEncaminhamentos { get; init; }
     public int CasosSeveros { get; init; }
     public decimal TaxaEncaminhamento { get; init; }
     public IReadOnlyCollection<DashboardDistributionItemDto> DistribuicaoTriagensMensais { get; init; } = [];

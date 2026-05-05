@@ -25,6 +25,13 @@ public sealed class EvaluationReferralConfiguration : IEntityTypeConfiguration<E
             .HasColumnName("encaminhado")
             .IsRequired();
 
+        builder.Property(x => x.SpecialistId)
+            .HasColumnName("specialist_id");
+
+        builder.Property(x => x.SpecialistNome)
+            .HasColumnName("specialist_nome")
+            .HasMaxLength(200);
+
         builder.Property(x => x.Especialidade)
             .HasColumnName("especialidade")
             .HasMaxLength(120);
@@ -55,6 +62,11 @@ public sealed class EvaluationReferralConfiguration : IEntityTypeConfiguration<E
             .HasForeignKey(x => x.PatientId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne(x => x.Specialist)
+            .WithMany()
+            .HasForeignKey(x => x.SpecialistId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasOne(x => x.CriadoPorUsuario)
             .WithMany()
             .HasForeignKey(x => x.CriadoPorUsuarioId)
@@ -67,6 +79,7 @@ public sealed class EvaluationReferralConfiguration : IEntityTypeConfiguration<E
 
         builder.HasIndex(x => x.EvaluationId).IsUnique();
         builder.HasIndex(x => x.PatientId);
+        builder.HasIndex(x => x.SpecialistId);
         builder.HasIndex(x => x.Especialidade);
     }
 }

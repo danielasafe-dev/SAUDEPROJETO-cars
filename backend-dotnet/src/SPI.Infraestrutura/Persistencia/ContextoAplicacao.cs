@@ -1,4 +1,4 @@
-﻿using SPI.Application.Interfaces;
+using SPI.Application.Interfaces;
 using SPI.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +17,7 @@ public sealed class AppDbContext : DbContext, IUnitOfWork
     public DbSet<Patient> Patients => Set<Patient>();
     public DbSet<FormTemplate> FormTemplates => Set<FormTemplate>();
     public DbSet<FormQuestion> FormQuestions => Set<FormQuestion>();
+    public DbSet<Specialist> Specialists => Set<Specialist>();
     public DbSet<Evaluation> Evaluations => Set<Evaluation>();
     public DbSet<EvaluationReferral> EvaluationReferrals => Set<EvaluationReferral>();
 
@@ -25,6 +26,5 @@ public sealed class AppDbContext : DbContext, IUnitOfWork
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
 }
-
 
 

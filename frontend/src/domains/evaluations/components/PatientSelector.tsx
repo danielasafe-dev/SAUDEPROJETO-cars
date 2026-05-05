@@ -3,8 +3,8 @@ import { getReusablePatients } from '@/domains/patients/api';
 import type { Patient } from '@/types';
 
 interface PatientSelectorProps {
-  value: number | null;
-  onChange: (id: number) => void;
+  value: string | null;
+  onChange: (id: string) => void;
   error?: string;
 }
 

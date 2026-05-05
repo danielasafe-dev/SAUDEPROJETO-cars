@@ -1,7 +1,8 @@
-﻿using SPI.Application.DTOs.Evaluations;
+using SPI.Application.DTOs.Evaluations;
 using SPI.Application.DTOs.Forms;
 using SPI.Application.DTOs.Groups;
 using SPI.Application.DTOs.Patients;
+using SPI.Application.DTOs.Specialists;
 using SPI.Application.DTOs.Users;
 using SPI.Domain.Entities;
 using SPI.Domain.Enums;
@@ -71,7 +72,7 @@ public static class DomainToDtoMapper
         GroupNome = evaluation.GroupNome,
         FormId = evaluation.FormTemplateId,
         FormNome = evaluation.FormNome,
-        Respostas = new Dictionary<int, int>(evaluation.Respostas),
+        Respostas = new Dictionary<string, int>(evaluation.Respostas),
         ScoreTotal = evaluation.ScoreTotal,
         PesoTotal = evaluation.PesoTotal,
         Classificacao = evaluation.Classificacao,
@@ -86,6 +87,8 @@ public static class DomainToDtoMapper
         EvaluationId = referral.EvaluationId,
         PatientId = referral.PatientId,
         Encaminhado = referral.Encaminhado,
+        SpecialistId = referral.SpecialistId,
+        SpecialistNome = referral.SpecialistNome,
         Especialidade = referral.Especialidade,
         CustoEstimado = referral.CustoEstimado,
         CriadoEm = referral.CriadoEm
@@ -97,6 +100,8 @@ public static class DomainToDtoMapper
         EvaluationId = referral.EvaluationId,
         PatientId = referral.PatientId,
         Encaminhado = referral.Encaminhado,
+        SpecialistId = referral.SpecialistId,
+        SpecialistNome = referral.SpecialistNome,
         Especialidade = referral.Especialidade,
         CustoEstimado = referral.CustoEstimado,
         CriadoEm = referral.CriadoEm
@@ -111,6 +116,16 @@ public static class DomainToDtoMapper
         Ativo = group.Ativo,
         QuantidadeMembros = group.Members.Select(x => x.UserId).Distinct().Count(),
         CriadoEm = group.CriadoEm
+    };
+
+    public static SpecialistResponseDto ToDto(this Specialist specialist) => new()
+    {
+        Id = specialist.Id,
+        Nome = specialist.Nome,
+        Especialidade = specialist.Especialidade,
+        CustoConsulta = specialist.CustoConsulta,
+        Ativo = specialist.Ativo,
+        CriadoEm = specialist.CriadoEm
     };
 
     public static FormResponseDto ToDto(this FormTemplate form) => new()

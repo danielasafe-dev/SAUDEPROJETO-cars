@@ -14,7 +14,7 @@ type DashboardFilterState = {
   dataFim?: string;
   periodoLabel?: string;
   monthLabel?: string;
-  grupoId?: number;
+  grupoId?: string;
   grupoNome?: string;
 };
 
@@ -198,11 +198,10 @@ export default function DashboardPage() {
         return rest;
       }
 
-      const parsedGroupId = Number(groupId);
-      const group = groups.find((item) => item.id === parsedGroupId);
+      const group = groups.find((item) => item.id === groupId);
       return {
         ...current,
-        grupoId: parsedGroupId,
+        grupoId: groupId,
         grupoNome: group?.nome,
       };
     });
@@ -346,10 +345,10 @@ export default function DashboardPage() {
         />
         <ImpactCard
           icon={Banknote}
-          title="KPI 11 - Economia financeira estimada"
-          value={formatCurrency(stats.economiaFinanceiraEstimada)}
-          subtitle={`Custo médio considerado: ${formatCurrency(stats.custoMedioConsultaEspecializada)} por consulta.`}
-          detail="Estimativa conservadora para demonstrar o efeito da triagem como filtro."
+          title="KPI 11 - Custo estimado com encaminhamentos"
+          value={formatCurrency(stats.custoTotalEncaminhamentos)}
+          subtitle="Soma dos valores dos especialistas indicados no período."
+          detail="Considera apenas avaliações salvas com paciente encaminhado."
           tone="green"
         />
       </div>
@@ -386,7 +385,7 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function GroupFilter({ value, groups, onChange }: { value?: number; groups: Group[]; onChange: (groupId: string) => void }) {
+function GroupFilter({ value, groups, onChange }: { value?: string; groups: Group[]; onChange: (groupId: string) => void }) {
   return (
     <label className="rounded-xl border border-blue-100 bg-white/80 px-3 py-2">
       <span className="block text-xs font-semibold text-gray-500">Grupo</span>

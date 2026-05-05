@@ -33,12 +33,12 @@ public sealed class DashboardAppService : IDashboardAppService
     }
 
     public async Task<DashboardResponseDto> GetAsync(
-        int actorUserId,
+        Guid actorUserId,
         string? risco = null,
         string? especialista = null,
         DateTime? dataInicio = null,
         DateTime? dataFim = null,
-        int? grupoId = null,
+        Guid? grupoId = null,
         CancellationToken cancellationToken = default)
     {
         var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
@@ -111,7 +111,7 @@ public sealed class DashboardAppService : IDashboardAppService
         };
     }
 
-    public async Task<IReadOnlyCollection<GroupResponseDto>> ListFilterGroupsAsync(int actorUserId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<GroupResponseDto>> ListFilterGroupsAsync(Guid actorUserId, CancellationToken cancellationToken = default)
     {
         var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
             ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
@@ -138,11 +138,11 @@ public sealed class DashboardAppService : IDashboardAppService
         string? especialista,
         DateTime? dataInicio,
         DateTime? dataFim,
-        int? grupoId)
+        Guid? grupoId)
     {
         var query = evaluations;
 
-        if (grupoId.HasValue && grupoId.Value > 0)
+        if (grupoId.HasValue && grupoId.Value != Guid.Empty)
         {
             query = query.Where(x => x.GroupId == grupoId.Value);
         }
@@ -178,7 +178,9 @@ public sealed class DashboardAppService : IDashboardAppService
         var scores = evaluations.Select(x => x.ScoreTotal).ToArray();
         var encaminhados = evaluations.Count(x => x.Referral?.Encaminhado == true);
         var semEncaminhamento = evaluations.Count(x => x.Referral is not null && !x.Referral.Encaminhado);
-        const decimal custoMedioConsultaEspecializada = 1000m;
+        var custoTotalEncaminhamentos = evaluations
+            .Where(x => x.Referral?.Encaminhado == true)
+            .Sum(x => x.Referral?.CustoEstimado ?? 0m);
 
         return new DashboardTriageSummaryDto
         {
@@ -189,7 +191,8 @@ public sealed class DashboardAppService : IDashboardAppService
             MaiorScore = scores.Length == 0 ? 0 : scores.Max(),
             Encaminhados = encaminhados,
             ConsultasEvitadas = semEncaminhamento,
-            EconomiaFinanceiraEstimada = semEncaminhamento * custoMedioConsultaEspecializada,
+            EconomiaFinanceiraEstimada = 0,
+            CustoTotalEncaminhamentos = custoTotalEncaminhamentos,
             CasosSeveros = evaluations.Count(x => RiskLabel(x) == "Severo"),
             TaxaEncaminhamento = evaluations.Count == 0 ? 0 : Math.Round(encaminhados * 100m / evaluations.Count, 1),
             DistribuicaoTriagensMensais = MonthlyDistribution(evaluations),

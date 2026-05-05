@@ -1,4 +1,4 @@
-﻿using SPI.Application.DTOs.Evaluations;
+using SPI.Application.DTOs.Evaluations;
 using SPI.Application.Interfaces;
 using SPI.Application.Mappings;
 using SPI.Application.Services.Access;
@@ -10,23 +10,12 @@ namespace SPI.Application.Services;
 
 public sealed class EvaluationsAppService : IEvaluationsAppService
 {
-    private const decimal DefaultReferralCost = 1000m;
-    private static readonly HashSet<string> AllowedReferralSpecialties = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Terapeuta Ocupacional",
-        "Fonoaudiologo",
-        "Fonoaudiólogo",
-        "Psiquiatra Infantil",
-        "Psicologo Infantil",
-        "Psicólogo Infantil",
-        "Neuropediatra"
-    };
-
     private readonly IEvaluationRepository _evaluationRepository;
     private readonly IPatientRepository _patientRepository;
     private readonly IUserRepository _userRepository;
     private readonly IFormRepository _formRepository;
     private readonly IGroupRepository _groupRepository;
+    private readonly ISpecialistRepository _specialistRepository;
     private readonly IUnitOfWork _unitOfWork;
 
     public EvaluationsAppService(
@@ -35,6 +24,7 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
         IUserRepository userRepository,
         IFormRepository formRepository,
         IGroupRepository groupRepository,
+        ISpecialistRepository specialistRepository,
         IUnitOfWork unitOfWork)
     {
         _evaluationRepository = evaluationRepository;
@@ -42,10 +32,11 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
         _userRepository = userRepository;
         _formRepository = formRepository;
         _groupRepository = groupRepository;
+        _specialistRepository = specialistRepository;
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<IReadOnlyCollection<EvaluationResponseDto>> ListAsync(int actorUserId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<EvaluationResponseDto>> ListAsync(Guid actorUserId, CancellationToken cancellationToken = default)
     {
         var actor = await GetActorAsync(actorUserId, cancellationToken);
         if (!actor.Role.CanViewEvaluations())
@@ -67,7 +58,7 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
         return evaluations.Select(x => x.ToDto()).ToList();
     }
 
-    public async Task<EvaluationResponseDto?> GetByIdAsync(int id, int actorUserId, CancellationToken cancellationToken = default)
+    public async Task<EvaluationResponseDto?> GetByIdAsync(Guid id, Guid actorUserId, CancellationToken cancellationToken = default)
     {
         var actor = await GetActorAsync(actorUserId, cancellationToken);
         if (!actor.Role.CanViewEvaluations())
@@ -85,7 +76,7 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
         return evaluation.ToDto();
     }
 
-    public async Task<EvaluationResponseDto> CreateAsync(CreateEvaluationRequestDto request, int actorUserId, CancellationToken cancellationToken = default)
+    public async Task<EvaluationResponseDto> CreateAsync(CreateEvaluationRequestDto request, Guid actorUserId, CancellationToken cancellationToken = default)
     {
         var actor = await GetActorAsync(actorUserId, cancellationToken);
         if (!actor.Role.CanEvaluate())
@@ -100,7 +91,7 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
 
         Evaluation evaluation;
         FormTemplate? form = null;
-        if (request.FormId.HasValue && request.FormId.Value > 0)
+        if (request.FormId.HasValue && request.FormId.Value != Guid.Empty)
         {
             form = await _formRepository.GetDetailedByIdAsync(request.FormId.Value, cancellationToken)
                 ?? throw new KeyNotFoundException("Formulario nao encontrado.");
@@ -148,9 +139,9 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
     }
 
     public async Task<EvaluationReferralResponseDto> SaveReferralAsync(
-        int id,
+        Guid id,
         SaveEvaluationReferralRequestDto request,
-        int actorUserId,
+        Guid actorUserId,
         CancellationToken cancellationToken = default)
     {
         var actor = await GetActorAsync(actorUserId, cancellationToken);
@@ -164,21 +155,26 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
 
         EnsureCanAccessGroup(actor, evaluation.GroupId, allowManagedOnly: false);
 
-        var specialty = NormalizeSpecialty(request.Especialidade);
-        if (request.Encaminhado && string.IsNullOrWhiteSpace(specialty))
+        Specialist? specialist = null;
+        if (request.Encaminhado)
         {
-            throw new InvalidOperationException("Selecione a especialidade do encaminhamento.");
-        }
+            if (!request.SpecialistId.HasValue || request.SpecialistId.Value == Guid.Empty)
+            {
+                throw new InvalidOperationException("Selecione o especialista do encaminhamento.");
+            }
 
-        if (request.Encaminhado && !AllowedReferralSpecialties.Contains(specialty!))
-        {
-            throw new InvalidOperationException("Especialidade de encaminhamento invalida.");
-        }
+            specialist = await _specialistRepository.GetByIdAsync(request.SpecialistId.Value, cancellationToken)
+                ?? throw new KeyNotFoundException("Especialista nao encontrado.");
 
-        var cost = request.Encaminhado ? request.CustoEstimado.GetValueOrDefault(DefaultReferralCost) : 0;
-        if (request.Encaminhado && cost <= 0)
-        {
-            cost = DefaultReferralCost;
+            if (!specialist.Ativo)
+            {
+                throw new InvalidOperationException("Especialista inativo nao pode receber encaminhamento.");
+            }
+
+            if (actor.OrganizationId.HasValue && specialist.OrganizationId.HasValue && actor.OrganizationId.Value != specialist.OrganizationId.Value)
+            {
+                throw new UnauthorizedAccessException("Especialista pertence a outra organizacao.");
+            }
         }
 
         EvaluationReferral referral;
@@ -189,8 +185,10 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
                 evaluation.PatientId,
                 actorUserId,
                 request.Encaminhado,
-                specialty,
-                cost);
+                specialist?.Id,
+                specialist?.Nome,
+                specialist?.Especialidade,
+                specialist?.CustoConsulta ?? 0);
 
             if (evaluation.OrganizationId.HasValue)
             {
@@ -202,14 +200,19 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
         else
         {
             referral = evaluation.Referral;
-            referral.UpdateDecision(request.Encaminhado, specialty, cost);
+            referral.UpdateDecision(
+                request.Encaminhado,
+                specialist?.Id,
+                specialist?.Nome,
+                specialist?.Especialidade,
+                specialist?.CustoConsulta ?? 0);
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return referral.ToDto();
     }
 
-    public async Task DeleteAsync(int id, int actorUserId, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(Guid id, Guid actorUserId, CancellationToken cancellationToken = default)
     {
         var actor = await GetActorAsync(actorUserId, cancellationToken);
         if (actor.Role != UserRole.Admin && !actor.Role.HasManagerPrivileges())
@@ -226,7 +229,7 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<EvaluationStatsResponseDto> GetStatsAsync(int actorUserId, CancellationToken cancellationToken = default)
+    public async Task<EvaluationStatsResponseDto> GetStatsAsync(Guid actorUserId, CancellationToken cancellationToken = default)
     {
         var evaluations = await ListAsync(actorUserId, cancellationToken);
         var list = evaluations.OrderByDescending(x => x.DataAvaliacao).ToList();
@@ -246,19 +249,19 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
         };
     }
 
-    public async Task<ExportFileResultDto> ExportExcelAsync(int id, int actorUserId, CancellationToken cancellationToken = default)
+    public async Task<ExportFileResultDto> ExportExcelAsync(Guid id, Guid actorUserId, CancellationToken cancellationToken = default)
     {
         var evaluation = await GetRequiredEvaluationAsync(id, actorUserId, cancellationToken);
         return EvaluationExportBuilder.BuildCsvFile(evaluation);
     }
 
-    public async Task<ExportFileResultDto> ExportPdfAsync(int id, int actorUserId, CancellationToken cancellationToken = default)
+    public async Task<ExportFileResultDto> ExportPdfAsync(Guid id, Guid actorUserId, CancellationToken cancellationToken = default)
     {
         var evaluation = await GetRequiredEvaluationAsync(id, actorUserId, cancellationToken);
         return EvaluationExportBuilder.BuildPdfFile(evaluation);
     }
 
-    private async Task<User> GetActorAsync(int actorUserId, CancellationToken cancellationToken)
+    private async Task<User> GetActorAsync(Guid actorUserId, CancellationToken cancellationToken)
     {
         var actor = await _userRepository.GetDetailedByIdAsync(actorUserId, cancellationToken)
             ?? throw new UnauthorizedAccessException("Usuario autenticado nao encontrado.");
@@ -271,13 +274,13 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
         return actor;
     }
 
-    private async Task<EvaluationResponseDto> GetRequiredEvaluationAsync(int id, int actorUserId, CancellationToken cancellationToken)
+    private async Task<EvaluationResponseDto> GetRequiredEvaluationAsync(Guid id, Guid actorUserId, CancellationToken cancellationToken)
     {
         var evaluation = await GetByIdAsync(id, actorUserId, cancellationToken);
         return evaluation ?? throw new KeyNotFoundException("Avaliacao nao encontrada.");
     }
 
-    private static void EnsureCanAccessGroup(User actor, int groupId, bool allowManagedOnly)
+    private static void EnsureCanAccessGroup(User actor, Guid groupId, bool allowManagedOnly)
     {
         var accessScope = AccessScopeResolver.Resolve(actor);
         if (accessScope.IsAdmin)
@@ -308,17 +311,17 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
         }
     }
 
-    private async Task<int> ResolveEvaluationGroupIdAsync(
+    private async Task<Guid> ResolveEvaluationGroupIdAsync(
         User actor,
-        int? requestedGroupId,
-        int? formGroupId,
-        int patientGroupId,
+        Guid? requestedGroupId,
+        Guid? formGroupId,
+        Guid patientGroupId,
         CancellationToken cancellationToken)
     {
         var accessScope = AccessScopeResolver.Resolve(actor);
-        var groupId = requestedGroupId.GetValueOrDefault() > 0
+        var groupId = requestedGroupId.GetValueOrDefault() != Guid.Empty
             ? requestedGroupId!.Value
-            : formGroupId.GetValueOrDefault() > 0
+            : formGroupId.GetValueOrDefault() != Guid.Empty
                 ? formGroupId!.Value
                 : accessScope.OperationalGroupIds.Count == 1
                     ? accessScope.OperationalGroupIds.Single()
@@ -340,21 +343,6 @@ public sealed class EvaluationsAppService : IEvaluationsAppService
         return group.Id;
     }
 
-    private static string? NormalizeSpecialty(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
-
-        var normalized = value.Trim();
-        return normalized switch
-        {
-            "Fonoaudiologo" => "Fonoaudiólogo",
-            "Psicologo Infantil" => "Psicólogo Infantil",
-            _ => normalized
-        };
-    }
 }
 
 

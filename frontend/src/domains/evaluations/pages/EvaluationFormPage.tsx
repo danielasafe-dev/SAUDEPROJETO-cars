@@ -18,21 +18,21 @@ interface EvaluationFormPageProps {
   onCancel?: () => void;
 }
 
-const DEFAULT_FORM_ID = 0;
+const DEFAULT_FORM_ID = 'default';
 
 export default function EvaluationFormPage({ embedded = false, onCancel }: EvaluationFormPageProps) {
   const navigate = useNavigate();
 
   const [formularios, setFormularios] = useState<Formulario[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [selectedFormId, setSelectedFormId] = useState<number | null>(null);
+  const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
   const [activeQuestions, setActiveQuestions] = useState<Question[]>([]);
-  const [formIdToSend, setFormIdToSend] = useState<number | undefined>(undefined);
+  const [formIdToSend, setFormIdToSend] = useState<string | undefined>(undefined);
 
   const [mode, setMode] = useState<'existing' | 'new'>('existing');
-  const [existingPatientId, setExistingPatientId] = useState<number | null>(null);
+  const [existingPatientId, setExistingPatientId] = useState<string | null>(null);
   const [createdPatient, setCreatedPatient] = useState<Patient | null>(null);
-  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [patientDialogOpen, setPatientDialogOpen] = useState(false);
   const [answers, setAnswers] = useState<EvaluationAnswers>({});
   const [observations, setObservations] = useState('');
@@ -51,7 +51,7 @@ export default function EvaluationFormPage({ embedded = false, onCancel }: Evalu
       });
   }, []);
 
-  function selectForm(formId: number) {
+  function selectForm(formId: string) {
     setSelectedFormId(formId);
     setAnswers({});
     setError('');
@@ -70,7 +70,7 @@ export default function EvaluationFormPage({ embedded = false, onCancel }: Evalu
           .map((p, idx) => {
             const maxScore = Math.max(2, Math.round(p.peso));
             return {
-              id: p.id ?? idx + 1,
+              id: p.id ?? String(idx + 1),
               name: p.texto,
               options: Array.from({ length: maxScore }, (_, i) => ({
                 score: i + 1,
@@ -278,7 +278,7 @@ export default function EvaluationFormPage({ embedded = false, onCancel }: Evalu
           <label className="block text-sm font-medium text-gray-700">Grupo responsavel pela avaliacao</label>
           <select
             value={selectedGroupId ?? ''}
-            onChange={(event) => setSelectedGroupId(Number(event.target.value) || null)}
+            onChange={(event) => setSelectedGroupId(event.target.value || null)}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Selecione o grupo</option>
@@ -360,9 +360,9 @@ function ExistingPatientSelector({
   createdPatient,
   onChange,
 }: {
-  value: number | null;
+  value: string | null;
   createdPatient: Patient | null;
-  onChange: (id: number) => void;
+  onChange: (id: string) => void;
 }) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [show, setShow] = useState(false);

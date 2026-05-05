@@ -1,8 +1,8 @@
-﻿namespace SPI.Domain.Services;
+namespace SPI.Domain.Services;
 
 public static class SPIClassificationService
 {
-    public static decimal CalculateScore(IReadOnlyDictionary<int, int> respostas)
+    public static decimal CalculateScore(IReadOnlyDictionary<string, int> respostas)
     {
         if (respostas.Count == 0)
         {

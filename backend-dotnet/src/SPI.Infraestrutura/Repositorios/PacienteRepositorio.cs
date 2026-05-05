@@ -1,4 +1,4 @@
-﻿using SPI.Domain.Entities;
+using SPI.Domain.Entities;
 using SPI.Domain.Repositories;
 using SPI.Infrastructure.Data.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +21,7 @@ public sealed class PatientRepository : IPatientRepository
             .OrderBy(x => x.Nome)
             .ToListAsync(cancellationToken);
 
-    public Task<List<Patient>> ListByGroupIdsAsync(IReadOnlyCollection<int> groupIds, CancellationToken cancellationToken = default)
+    public Task<List<Patient>> ListByGroupIdsAsync(IReadOnlyCollection<Guid> groupIds, CancellationToken cancellationToken = default)
     {
         if (groupIds.Count == 0)
         {
@@ -36,12 +36,12 @@ public sealed class PatientRepository : IPatientRepository
             .ToListAsync(cancellationToken);
     }
 
-    public Task<Patient?> GetByIdAsync(int id, CancellationToken cancellationToken = default) =>
+    public Task<Patient?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         _context.Patients
             .Include(x => x.Group)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
-    public Task<List<Patient>> ListByOrganizationIdAsync(int organizationId, CancellationToken cancellationToken = default) =>
+    public Task<List<Patient>> ListByOrganizationIdAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
         _context.Patients
             .AsNoTracking()
             .Include(x => x.Group)
@@ -49,7 +49,7 @@ public sealed class PatientRepository : IPatientRepository
             .OrderBy(x => x.Nome)
             .ToListAsync(cancellationToken);
 
-    public Task<List<Patient>> ListReusableByOrganizationIdAsync(int organizationId, CancellationToken cancellationToken = default) =>
+    public Task<List<Patient>> ListReusableByOrganizationIdAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
         _context.Patients
             .AsNoTracking()
             .Include(x => x.Group)
